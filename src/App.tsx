@@ -31,7 +31,9 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [studySession, setStudySession] = useState<StudySession | null>(null);
-  const stopStreamingRef = useRef(false);
+  
+  // Use AbortController for proper cancellation
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { isInstallable, isInstalled, installApp, dismissInstallPrompt } = usePWA();
   
@@ -65,13 +67,42 @@ function App() {
     aiService.updateSettings(settings);
   }, [settings]);
 
-  useEffect(() => { storageUtils.saveConversations(conversations); }, [conversations]);
-  useEffect(() => { storageUtils.saveNotes(notes); }, [notes]);
-  useEffect(() => { localStorage.setItem('ai-tutor-sidebar-folded', JSON.stringify(sidebarFolded)); }, [sidebarFolded]);
+  // Debounced save to prevent too frequent writes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      storageUtils.saveConversations(conversations);
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [conversations]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      storageUtils.saveNotes(notes);
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [notes]);
+
+  useEffect(() => { 
+    localStorage.setItem('ai-tutor-sidebar-folded', JSON.stringify(sidebarFolded)); 
+  }, [sidebarFolded]);
+
+  // Close quiz modal when conversation changes
+  useEffect(() => {
+    setIsQuizModalOpen(false);
+    setStudySession(null);
+  }, [currentConversationId]);
 
   // --- MEMOS ---
-  const currentConversation = useMemo(() => conversations.find(c => c.id === currentConversationId), [conversations, currentConversationId]);
-  const currentNote = useMemo(() => notes.find(n => n.id === currentNoteId), [notes, currentNoteId]);
+  const currentConversation = useMemo(() => 
+    conversations.find(c => c.id === currentConversationId), 
+    [conversations, currentConversationId]
+  );
+  
+  const currentNote = useMemo(() => 
+    notes.find(n => n.id === currentNoteId), 
+    [notes, currentNoteId]
+  );
+  
   const hasApiKey = !!(settings.googleApiKey || settings.zhipuApiKey || settings.mistralApiKey);
   
   // --- GENERAL HANDLERS ---
@@ -81,6 +112,7 @@ function App() {
     setCurrentNoteId(null);
     if (window.innerWidth < 1024) setSidebarOpen(false);
   };
+
   const handleSelectNote = (id: string | null) => {
     setActiveView('note');
     setCurrentNoteId(id);
@@ -107,7 +139,12 @@ function App() {
       return;
     }
 
-    const userMessage: Message = { id: generateId(), content, role: 'user', timestamp: new Date() };
+    const userMessage: Message = { 
+      id: generateId(), 
+      content, 
+      role: 'user', 
+      timestamp: new Date() 
+    };
 
     let conversationToUpdate: Conversation;
     const existingConversation = conversations.find(c => c.id === currentConversationId);
@@ -131,21 +168,37 @@ function App() {
         messages: [...existingConversation.messages, userMessage],
         updatedAt: new Date(),
       };
-      setConversations(prev => prev.map(c => c.id === conversationToUpdate.id ? conversationToUpdate : c));
+      setConversations(prev => prev.map(c => 
+        c.id === conversationToUpdate.id ? conversationToUpdate : c
+      ));
     }
 
     setIsChatLoading(true);
-    stopStreamingRef.current = false;
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
 
     try {
-      const assistantMessage: Message = { id: generateId(), content: '', role: 'assistant', timestamp: new Date(), model: settings.selectedModel };
+      const assistantMessage: Message = { 
+        id: generateId(), 
+        content: '', 
+        role: 'assistant', 
+        timestamp: new Date(), 
+        model: settings.selectedModel 
+      };
       setStreamingMessage(assistantMessage);
 
       let fullResponse = '';
-      const messagesForApi = conversationToUpdate.messages.map(m => ({ role: m.role, content: m.content }));
+      const messagesForApi = conversationToUpdate.messages.map(m => ({ 
+        role: m.role, 
+        content: m.content 
+      }));
 
       for await (const chunk of aiService.generateStreamingResponse(messagesForApi)) {
-        if (stopStreamingRef.current) break;
+        // Check if aborted
+        if (abortControllerRef.current?.signal.aborted) {
+          break;
+        }
         fullResponse += chunk;
         setStreamingMessage(prev => (prev ? { ...prev, content: fullResponse } : null));
       }
@@ -158,17 +211,27 @@ function App() {
           : conv
       ));
     } catch (error) {
-      console.error('Error sending message:', error);
-      const errorMessage: Message = { id: generateId(), content: `Sorry, an error occurred. Error: ${error instanceof Error ? error.message : 'Unknown error'}`, role: 'assistant', timestamp: new Date() };
-      setConversations(prev => prev.map(conv =>
-        conv.id === conversationToUpdate.id
-          ? { ...conv, messages: [...conv.messages, errorMessage] }
-          : conv
-      ));
+      // Don't show error if request was aborted
+      if (abortControllerRef.current?.signal.aborted) {
+        console.log('Message generation was cancelled');
+      } else {
+        console.error('Error sending message:', error);
+        const errorMessage: Message = { 
+          id: generateId(), 
+          content: `Sorry, an error occurred. Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+          role: 'assistant', 
+          timestamp: new Date() 
+        };
+        setConversations(prev => prev.map(conv =>
+          conv.id === conversationToUpdate.id
+            ? { ...conv, messages: [...conv.messages, errorMessage] }
+            : conv
+        ));
+      }
     } finally {
       setStreamingMessage(null);
       setIsChatLoading(false);
-      stopStreamingRef.current = false;
+      abortControllerRef.current = null;
     }
   };
 
@@ -196,51 +259,64 @@ function App() {
 
     const history = conversation.messages.slice(0, messageIndex);
     if (history.length === 0 || history[history.length - 1].role !== 'user') {
-        console.error("Cannot regenerate without a preceding user message.");
-        return;
+      console.error("Cannot regenerate without a preceding user message.");
+      return;
     }
     const messagesForApi = history.map(m => ({ role: m.role, content: m.content }));
 
     setConversations(prev => prev.map(conv => {
-        if (conv.id === currentConversationId) {
-            return { ...conv, messages: history, updatedAt: new Date() };
-        }
-        return conv;
+      if (conv.id === currentConversationId) {
+        return { ...conv, messages: history, updatedAt: new Date() };
+      }
+      return conv;
     }));
 
     setIsChatLoading(true);
-    stopStreamingRef.current = false;
+    abortControllerRef.current = new AbortController();
 
     try {
-        const assistantMessage: Message = { id: generateId(), content: '', role: 'assistant', timestamp: new Date(), model: settings.selectedModel };
-        setStreamingMessage(assistantMessage);
+      const assistantMessage: Message = { 
+        id: generateId(), 
+        content: '', 
+        role: 'assistant', 
+        timestamp: new Date(), 
+        model: settings.selectedModel 
+      };
+      setStreamingMessage(assistantMessage);
 
-        let fullResponse = '';
-        for await (const chunk of aiService.generateStreamingResponse(messagesForApi)) {
-            if (stopStreamingRef.current) break;
-            fullResponse += chunk;
-            setStreamingMessage(prev => prev ? { ...prev, content: fullResponse } : null);
-        }
+      let fullResponse = '';
+      for await (const chunk of aiService.generateStreamingResponse(messagesForApi)) {
+        if (abortControllerRef.current?.signal.aborted) break;
+        fullResponse += chunk;
+        setStreamingMessage(prev => prev ? { ...prev, content: fullResponse } : null);
+      }
 
-        const finalAssistantMessage: Message = { ...assistantMessage, content: fullResponse };
-        
-        setConversations(prev => prev.map(conv => 
-            conv.id === currentConversationId 
-            ? { ...conv, messages: [...history, finalAssistantMessage], updatedAt: new Date() } 
-            : conv
-        ));
+      const finalAssistantMessage: Message = { ...assistantMessage, content: fullResponse };
+      
+      setConversations(prev => prev.map(conv => 
+        conv.id === currentConversationId 
+          ? { ...conv, messages: [...history, finalAssistantMessage], updatedAt: new Date() } 
+          : conv
+      ));
     } catch (error) {
+      if (!abortControllerRef.current?.signal.aborted) {
         console.error('Error regenerating response:', error);
-        const errorMessage: Message = { id: generateId(), content: `Sorry, an error occurred while regenerating. Error: ${error instanceof Error ? error.message : 'Unknown error'}`, role: 'assistant', timestamp: new Date() };
+        const errorMessage: Message = { 
+          id: generateId(), 
+          content: `Sorry, an error occurred while regenerating. Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+          role: 'assistant', 
+          timestamp: new Date() 
+        };
         setConversations(prev => prev.map(conv => 
-            conv.id === currentConversationId 
+          conv.id === currentConversationId 
             ? { ...conv, messages: [...history, errorMessage] } 
             : conv
         ));
+      }
     } finally {
-        setStreamingMessage(null);
-        setIsChatLoading(false);
-        stopStreamingRef.current = false;
+      setStreamingMessage(null);
+      setIsChatLoading(false);
+      abortControllerRef.current = null;
     }
   };
   
@@ -306,13 +382,39 @@ function App() {
     setSettings(newSettings);
     storageUtils.saveSettings(newSettings);
   };
-  const handleRenameConversation = (id: string, newTitle: string) => setConversations(prev => prev.map(c => (c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c)));
-  const handleTogglePinConversation = (id: string) => setConversations(prev => prev.map(c => (c.id === id ? { ...c, isPinned: !c.isPinned, updatedAt: new Date() } : c)));
-  const handleSaveSettings = (newSettings: APISettings) => { setSettings(newSettings); storageUtils.saveSettings(newSettings); setSettingsOpen(false); };
-  const handleInstallApp = async () => { if (await installApp()) console.log('App installed'); };
-  const handleStopGenerating = () => stopStreamingRef.current = true;
 
-  const sortedNotes = useMemo(() => [...notes].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()), [notes]);
+  const handleRenameConversation = (id: string, newTitle: string) => {
+    setConversations(prev => prev.map(c => 
+      (c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c)
+    ));
+  };
+
+  const handleTogglePinConversation = (id: string) => {
+    setConversations(prev => prev.map(c => 
+      (c.id === id ? { ...c, isPinned: !c.isPinned, updatedAt: new Date() } : c)
+    ));
+  };
+
+  const handleSaveSettings = (newSettings: APISettings) => { 
+    setSettings(newSettings); 
+    storageUtils.saveSettings(newSettings); 
+    setSettingsOpen(false); 
+  };
+
+  const handleInstallApp = async () => { 
+    if (await installApp()) console.log('App installed'); 
+  };
+
+  const handleStopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
+  const sortedNotes = useMemo(() => 
+    [...notes].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()), 
+    [notes]
+  );
 
   return (
     <div className="app-container">
@@ -380,7 +482,9 @@ function App() {
         onClose={() => setIsQuizModalOpen(false)} 
         session={studySession} 
       />
-      {isInstallable && !isInstalled && ( <InstallPrompt onInstall={handleInstallApp} onDismiss={dismissInstallPrompt} /> )}
+      {isInstallable && !isInstalled && ( 
+        <InstallPrompt onInstall={handleInstallApp} onDismiss={dismissInstallPrompt} /> 
+      )}
     </div>
   );
 }
