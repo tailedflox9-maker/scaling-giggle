@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FILE: src/index.css - FIXED RESPONSIVE VERSION
+   REFINED UI STYLES - Enhanced Visual Design
    ========================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @tailwind base;
@@ -7,7 +7,7 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   Base Layer & Theming
+   Enhanced Theming with Better Contrast & Depth
    ========================================================================== */
 @layer base {
   ::selection {
@@ -16,18 +16,39 @@
   }
 
   :root {
-    --color-bg: #0A0A0A;
-    --color-sidebar: #141414;
-    --color-card: #1F1F1F;
-    --color-border: #2A2A2A;
-    --color-text-primary: #FFFFFF;
-    --color-text-secondary: #A0A0A0;
-    --color-text-placeholder: #6B7280;
-    --color-accent-bg: #FFFFFF;
-    --color-accent-text: #0A0A0A;
-    --color-accent-bg-hover: #F0F0F0;
+    /* Enhanced color palette with better depth */
+    --color-bg: #0F0F0F;
+    --color-sidebar: #171717;
+    --color-card: #222222;
+    --color-border: #333333;
+    --color-border-hover: #404040;
+    --color-text-primary: #FAFAFA;
+    --color-text-secondary: #A8A8A8;
+    --color-text-placeholder: #737373;
+    --color-accent-bg: #3B82F6;
+    --color-accent-text: #FFFFFF;
+    --color-accent-bg-hover: #2563EB;
+    --color-success: #10B981;
+    --color-warning: #F59E0B;
+    --color-danger: #EF4444;
+    
+    /* Glassmorphism effects */
+    --glass-bg: rgba(34, 34, 34, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+    
     --font-weight: 500;
     --font-english: 'Inter', sans-serif;
+    
+    /* Smooth transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   * {
@@ -44,6 +65,8 @@
     font-family: var(--font-english);
     margin: 0;
     padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   html {
@@ -52,38 +75,37 @@
 }
 
 /* ==========================================================================
-   Components Layer - FIXED RESPONSIVE
+   Enhanced Component Styles
    ========================================================================== */
 @layer components {
-  /* --- Global Scrollbar Styling --- */
+  /* --- Refined Scrollbar --- */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background-color: var(--color-border);
-    border-radius: 3px;
-    transition: background-color 0.2s ease-in-out;
+    background: linear-gradient(180deg, var(--color-border) 0%, var(--color-border-hover) 100%);
+    border-radius: 4px;
+    transition: background var(--transition-base);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-text-secondary);
+    background: linear-gradient(180deg, var(--color-border-hover) 0%, #505050 100%);
   }
-  /* For Firefox */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;
   }
 
-  /* --- Keyframe Animations --- */
+  /* --- Enhanced Animations --- */
   @keyframes shimmer {
     0% { background-position: -200px 0; }
     100% { background-position: calc(200px + 100%) 0; }
   }
   @keyframes messageSlideIn {
-    from { opacity: 0; transform: translateY(15px) scale(0.98); }
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
   @keyframes fadeIn {
@@ -91,7 +113,7 @@
     to { opacity: 1; }
   }
   @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
   }
   @keyframes slideUp {
@@ -99,70 +121,80 @@
     to { transform: translateY(0); opacity: 1; }
   }
   @keyframes pulse {
+    0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
   }
   @keyframes typing {
     0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
     40% { transform: scale(1); opacity: 1; }
   }
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.4); }
+  }
 
-  /* --- Animation & Transition Utilities --- */
   .animate-shimmer {
     background: linear-gradient(90deg, var(--color-border) 25%, var(--color-card) 50%, var(--color-border) 75%);
     background-size: 200px 100%;
     animation: shimmer 1.5s infinite;
   }
   .animate-fade-in-up {
-    animation: fadeInUp 0.3s ease-out;
+    animation: fadeInUp 0.4s ease-out;
   }
   .animate-slide-up {
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.4s ease-out;
   }
   .pulse-subtle {
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
 
-  /* --- FIXED RESPONSIVE LAYOUT --- */
+  /* --- ENHANCED LAYOUT --- */
   .app-container {
     height: 100vh;
     height: 100dvh;
     display: flex;
     overflow: hidden;
     position: relative;
+    background: radial-gradient(ellipse at top, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
   }
 
-  /* --- SIDEBAR RESPONSIVE FIXES --- */
+  /* --- REFINED SIDEBAR --- */
   .sidebar {
-    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    transition: all var(--transition-slow);
     transform: translateZ(0);
     flex-shrink: 0;
     height: 100vh;
     height: 100dvh;
     position: relative;
     z-index: 20;
+    background: linear-gradient(180deg, var(--color-sidebar) 0%, rgba(23, 23, 23, 0.95) 100%);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid var(--color-border);
+    box-shadow: var(--shadow-lg);
   }
 
-  /* Desktop sidebar */
   @media (min-width: 1024px) {
     .sidebar {
       position: static;
-      width: 16rem; /* 64 * 4px = 256px */
+      width: 18rem;
     }
     .sidebar.sidebar-folded {
-      width: 4rem; /* 16 * 4px = 64px */
+      width: 4.5rem;
     }
   }
 
-  /* Mobile Sidebar */
   @media (max-width: 1023px) {
     .sidebar {
       position: fixed;
-      width: 280px;
+      width: 300px;
       left: 0;
       top: 0;
       z-index: 50;
       transform: translateX(-100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+      transition: transform var(--transition-slow);
     }
     .sidebar.sidebar-open {
       transform: translateX(0);
@@ -170,25 +202,28 @@
     .sidebar-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
       z-index: 40;
+      animation: fadeIn var(--transition-base);
     }
     .mobile-menu-button {
       position: fixed;
       top: 1rem;
       left: 1rem;
       z-index: 60;
+      box-shadow: var(--shadow-lg);
     }
   }
 
-  /* --- MAIN CONTENT AREA FIXES --- */
+  /* --- REFINED MAIN CONTENT --- */
   .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0; /* Prevents flex item from overflowing */
+    min-width: 0;
     position: relative;
+    background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.03) 0%, transparent 70%);
   }
 
   @media (max-width: 1023px) {
@@ -197,7 +232,7 @@
     }
   }
 
-  /* --- CHAT AREA RESPONSIVE --- */
+  /* --- ENHANCED CHAT AREA --- */
   .chat-area {
     flex: 1;
     display: flex;
@@ -208,33 +243,37 @@
   .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 1rem;
+    padding: 1.5rem;
   }
 
   .chat-messages-container {
-    max-width: 48rem; /* 3xl */
+    max-width: 52rem;
     margin: 0 auto;
     width: 100%;
   }
 
   @media (max-width: 768px) {
     .chat-messages {
-      padding: 0.5rem;
+      padding: 1rem;
     }
   }
 
-  /* --- MESSAGE BUBBLES RESPONSIVE --- */
+  /* --- REFINED MESSAGE BUBBLES --- */
   .message-wrapper {
-    animation: messageSlideIn 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    animation: messageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, opacity;
   }
 
   .message-bubble {
-    transition: all 0.2s ease-out;
+    transition: all var(--transition-base);
     transform: translateZ(0);
     max-width: 85%;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    background: linear-gradient(135deg, var(--color-card) 0%, rgba(34, 34, 34, 0.8) 100%);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(10px);
   }
 
   @media (max-width: 768px) {
@@ -244,55 +283,63 @@
   }
 
   .message-bubble:hover {
-    transform: translateY(-1px) translateZ(0);
+    transform: translateY(-2px) translateZ(0);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-hover);
   }
 
-  /* --- CHAT INPUT RESPONSIVE --- */
+  /* --- REFINED CHAT INPUT --- */
   .chat-input-container {
-    padding: 1rem;
+    padding: 1.5rem;
     flex-shrink: 0;
+    background: linear-gradient(to top, var(--color-bg) 0%, transparent 100%);
   }
 
   @media (max-width: 768px) {
     .chat-input-container {
-      padding: 0.75rem;
-      padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+      padding: 1rem;
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom));
     }
   }
 
   .chat-input {
-    transition: all 0.2s ease;
-    max-width: 48rem;
+    transition: all var(--transition-base);
+    max-width: 52rem;
     margin: 0 auto;
     width: 100%;
-  }
-
-  .chat-input:focus {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
   }
 
   .chat-input-form {
     display: flex;
     align-items: end;
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: 1rem;
-    padding: 0.5rem;
-    gap: 0.5rem;
+    background: linear-gradient(135deg, var(--color-card) 0%, rgba(34, 34, 34, 0.9) 100%);
+    border: 1.5px solid var(--color-border);
+    border-radius: 1.25rem;
+    padding: 0.75rem;
+    gap: 0.75rem;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(10px);
+    transition: all var(--transition-base);
+  }
+
+  .chat-input-form:focus-within {
+    border-color: var(--color-accent-bg);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), var(--shadow-lg);
   }
 
   .chat-input-textarea {
     flex: 1;
     min-height: 24px;
     max-height: 120px;
-    padding: 0.5rem;
+    padding: 0.625rem;
     background: transparent;
     resize: none;
     border: none;
     outline: none;
     color: var(--color-text-primary);
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    line-height: 1.5;
   }
 
   .chat-input-textarea::placeholder {
@@ -302,29 +349,45 @@
   .chat-input-buttons {
     display: flex;
     align-items: end;
-    gap: 0.25rem;
+    gap: 0.5rem;
     padding-bottom: 0.125rem;
   }
 
-  /* --- TYPING INDICATOR --- */
+  /* --- REFINED TYPING INDICATOR --- */
   .typing-dot {
     width: 8px;
     height: 8px;
-    background-color: #9CA3AF;
+    background: linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%);
     border-radius: 50%;
     animation: typing 1.4s infinite ease-in-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .typing-dot:nth-child(1) { animation-delay: -0.32s; }
   .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 
-  /* --- BUTTON STYLES --- */
+  /* --- ENHANCED BUTTON STYLES --- */
   .interactive-button {
-    transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+    transition: all var(--transition-base);
     transform: translateZ(0);
     will-change: transform, box-shadow;
-    min-height: 36px;
-    min-width: 36px;
+    min-height: 40px;
+    min-width: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .interactive-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+  }
+
+  .interactive-button:hover::before {
+    opacity: 1;
   }
 
   @media (max-width: 768px) {
@@ -336,19 +399,19 @@
 
   .interactive-button:hover {
     transform: translateY(-2px) translateZ(0);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-md);
   }
 
   .interactive-button:active {
     transform: translateY(0) translateZ(0);
     transition-duration: 0.1s;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-sm);
   }
 
   .interactive-button:disabled {
     transform: none !important;
     box-shadow: none !important;
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
@@ -357,19 +420,20 @@
     outline-offset: 2px;
   }
 
-  /* Chat UI Specific Button */
+  /* Enhanced Primary Button */
   .chat-ui-button {
-    background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
     color: white;
     font-weight: 600;
-    transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    transition: all var(--transition-base);
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25), 0 0 20px rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.5);
   }
 
   .chat-ui-button:hover {
-    background: linear-gradient(135deg, #4338ca 0%, #2563eb 100%);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    box-shadow: 0 6px 12px rgba(59, 130, 246, 0.35), 0 0 30px rgba(59, 130, 246, 0.25);
+    transform: translateY(-2px);
   }
 
   .chat-ui-button:active {
@@ -378,16 +442,17 @@
   }
 
   .chat-ui-button:disabled {
-    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    background: linear-gradient(135deg, #4B5563 0%, #374151 100%);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+    border-color: transparent;
   }
 
-  /* --- MODAL RESPONSIVE --- */
+  /* --- REFINED MODAL --- */
   .modal-backdrop {
-    backdrop-filter: blur(4px);
-    transition: all 0.2s ease;
+    backdrop-filter: blur(12px);
+    transition: all var(--transition-base);
     position: fixed;
     inset: 0;
     z-index: 50;
@@ -395,6 +460,8 @@
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    animation: fadeIn var(--transition-base);
   }
 
   @media (max-width: 768px) {
@@ -405,43 +472,47 @@
   }
 
   .modal-content {
-    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-    transform: translateY(-10px);
+    transition: all var(--transition-slow);
+    transform: translateY(-20px) scale(0.95);
     opacity: 0;
     width: 100%;
-    max-width: 28rem;
+    max-width: 32rem;
     max-height: 90vh;
     overflow-y: auto;
+    background: linear-gradient(180deg, var(--color-sidebar) 0%, rgba(23, 23, 23, 0.98) 100%);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xl);
+    backdrop-filter: blur(20px);
   }
 
   @media (max-width: 768px) {
     .modal-content {
       max-width: 100%;
       max-height: 85vh;
-      transform: translateY(20px);
+      transform: translateY(40px) scale(0.95);
     }
   }
 
   .modal-content.open {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 
-  /* --- RESPONSIVE GRID FIXES --- */
+  /* --- REFINED GRID --- */
   .model-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 
   @media (max-width: 640px) {
     .model-grid {
       grid-template-columns: 1fr;
-      gap: 0.25rem;
+      gap: 0.5rem;
     }
   }
 
-  /* --- TEXT OVERFLOW FIXES --- */
+  /* --- ENHANCED TEXT UTILITIES --- */
   .truncate-text {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -455,7 +526,45 @@
     overflow: hidden;
   }
 
-  /* --- SAFE AREA FOR PWA --- */
+  /* --- GLASSMORPHISM EFFECT --- */
+  .glass-effect {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* --- GRADIENT BORDERS --- */
+  .gradient-border {
+    position: relative;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(139, 92, 246, 0.5));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* --- ENHANCED CARD HOVER --- */
+  .hover-lift {
+    transition: all var(--transition-base);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* --- SAFE AREAS FOR PWA --- */
   @media (display-mode: standalone) {
     body {
       user-select: none;
@@ -465,15 +574,6 @@
       padding-bottom: env(safe-area-inset-bottom);
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
-    }
-  }
-
-  @media (max-width: 1023px) and (display-mode: standalone) {
-    .sidebar {
-      padding-top: env(safe-area-inset-top);
-    }
-    .mobile-chat-area {
-      padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
     }
   }
 
@@ -492,8 +592,8 @@
 
   @media (prefers-contrast: high) {
     :root {
-      --color-border: #404040;
-      --color-card: #2a2a2a;
+      --color-border: #505050;
+      --color-card: #2A2A2A;
     }
   }
 
@@ -506,7 +606,7 @@
     }
   }
 
-  /* --- ADDITIONAL MOBILE OPTIMIZATIONS --- */
+  /* --- MOBILE OPTIMIZATIONS --- */
   @media (max-width: 768px) {
     .touch-target {
       min-height: 44px;
@@ -518,23 +618,13 @@
     input, textarea, select {
       font-size: 16px;
     }
-
-    /* Fix for mobile viewport units */
     .mobile-height {
       height: 100vh;
       height: 100dvh;
     }
-
-    /* Mobile menu button positioning */
-    .mobile-menu-button {
-      position: fixed;
-      top: 1rem;
-      left: 1rem;
-      z-index: 60;
-    }
   }
 
-  /* --- LANDSCAPE ORIENTATION FIXES --- */
+  /* --- LANDSCAPE FIXES --- */
   @media (max-width: 768px) and (orientation: landscape) {
     .chat-messages {
       padding: 0.5rem;
