@@ -9,35 +9,58 @@ const defaultSettings: APISettings = {
   zhipuApiKey: '',
   mistralApiKey: '',
   selectedModel: 'google',
-  selectedTutorMode: 'standard', // Default tutor mode
+  selectedTutorMode: 'standard',
 };
+
+// Helper function to safely parse dates
+function parseDate(dateValue: any): Date {
+  if (!dateValue) return new Date();
+  const parsed = new Date(dateValue);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
 
 export const storageUtils = {
   getConversations(): Conversation[] {
     try {
       const stored = localStorage.getItem(CONVERSATIONS_KEY);
       if (!stored) return [];
+      
       const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) {
+        console.error('Invalid conversations format');
+        return [];
+      }
+
       return parsed.map((conv: any) => ({
         ...conv,
-        createdAt: new Date(conv.createdAt),
-        updatedAt: new Date(conv.updatedAt),
-        messages: conv.messages.map((msg: any) => ({
+        createdAt: parseDate(conv.createdAt),
+        updatedAt: parseDate(conv.updatedAt),
+        messages: Array.isArray(conv.messages) ? conv.messages.map((msg: any) => ({
           ...msg,
-          timestamp: new Date(msg.timestamp),
-        })),
+          timestamp: parseDate(msg.timestamp),
+        })) : [],
       }));
     } catch (error) {
       console.error('Error loading conversations:', error);
+      // Clear corrupted data
+      localStorage.removeItem(CONVERSATIONS_KEY);
       return [];
     }
   },
 
   saveConversations(conversations: Conversation[]): void {
     try {
+      if (!Array.isArray(conversations)) {
+        console.error('Invalid conversations data');
+        return;
+      }
       localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(conversations));
     } catch (error) {
       console.error('Error saving conversations:', error);
+      // Handle quota exceeded error
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        alert('Storage quota exceeded. Please delete some conversations.');
+      }
     }
   },
 
@@ -45,9 +68,19 @@ export const storageUtils = {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);
       if (!stored) return defaultSettings;
-      return { ...defaultSettings, ...JSON.parse(stored) };
+      
+      const parsed = JSON.parse(stored);
+      // Ensure all required fields exist
+      return {
+        googleApiKey: parsed.googleApiKey || '',
+        zhipuApiKey: parsed.zhipuApiKey || '',
+        mistralApiKey: parsed.mistralApiKey || '',
+        selectedModel: parsed.selectedModel || 'google',
+        selectedTutorMode: parsed.selectedTutorMode || 'standard',
+      };
     } catch (error) {
       console.error('Error loading settings:', error);
+      localStorage.removeItem(SETTINGS_KEY);
       return defaultSettings;
     }
   },
@@ -64,29 +97,47 @@ export const storageUtils = {
     try {
       const stored = localStorage.getItem(NOTES_KEY);
       if (!stored) return [];
+      
       const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) {
+        console.error('Invalid notes format');
+        return [];
+      }
+
       return parsed.map((note: any) => ({
         ...note,
-        createdAt: new Date(note.createdAt),
-        updatedAt: new Date(note.updatedAt),
+        createdAt: parseDate(note.createdAt),
+        updatedAt: parseDate(note.updatedAt),
       }));
     } catch (error) {
       console.error('Error loading notes:', error);
+      localStorage.removeItem(NOTES_KEY);
       return [];
     }
   },
 
   saveNotes(notes: Note[]): void {
     try {
+      if (!Array.isArray(notes)) {
+        console.error('Invalid notes data');
+        return;
+      }
       localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
     } catch (error) {
       console.error('Error saving notes:', error);
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        alert('Storage quota exceeded. Please delete some notes.');
+      }
     }
   },
 
   clearAllData(): void {
-    localStorage.removeItem(CONVERSATIONS_KEY);
-    localStorage.removeItem(SETTINGS_KEY);
-    localStorage.removeItem(NOTES_KEY);
+    try {
+      localStorage.removeItem(CONVERSATIONS_KEY);
+      localStorage.removeItem(SETTINGS_KEY);
+      localStorage.removeItem(NOTES_KEY);
+    } catch (error) {
+      console.error('Error clearing data:', error);
+    }
   }
 };
