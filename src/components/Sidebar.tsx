@@ -140,13 +140,12 @@ export function Sidebar({
         // Select the first conversation
         onSelectConversation(sortedConversations[0].id);
       }
-      // If no conversations exist, the handler will show the welcome screen
     } else if (newView === 'notes') {
-      // Don't call onSelectNote(null) - this was causing the issue
-      // The activeView will be synced via useEffect from parent
+      // Call with null to trigger the view change without selecting a note
+      onSelectNote(null);
     } else if (newView === 'flowcharts') {
-      // Don't call onSelectFlowchart(null) - this was causing the issue
-      // The activeView will be synced via useEffect from parent
+      // Call with null to trigger the view change without selecting a flowchart
+      onSelectFlowchart(null);
     }
   };
 
