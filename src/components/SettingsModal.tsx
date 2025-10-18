@@ -8,6 +8,7 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: APISettings;
   onSaveSettings: (settings: APISettings) => void;
+  onTutorModeChange?: (mode: TutorMode) => void;
 }
 
 const apiInfo = {
@@ -25,7 +26,7 @@ const tutorModes = [
 
 type ActiveTab = 'general' | 'keys' | 'data';
 
-export function SettingsModal({ isOpen, onClose, settings, onSaveSettings }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, settings, onSaveSettings, onTutorModeChange }: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState<APISettings>(settings);
   const [visibleApis, setVisibleApis] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<ActiveTab>('general');
@@ -44,7 +45,16 @@ export function SettingsModal({ isOpen, onClose, settings, onSaveSettings }: Set
   };
   
   const handleTutorModeChange = (modeId: TutorMode) => {
-    setLocalSettings(prev => ({...prev, selectedTutorMode: modeId}));
+    const newSettings = {...localSettings, selectedTutorMode: modeId};
+    setLocalSettings(newSettings);
+    
+    // Immediately save and notify parent
+    if (onTutorModeChange) {
+      onTutorModeChange(modeId);
+    }
+    
+    // Also update local storage immediately
+    storageUtils.saveSettings(newSettings);
   };
 
   const handleExportData = () => {
@@ -142,9 +152,16 @@ export function SettingsModal({ isOpen, onClose, settings, onSaveSettings }: Set
         <div className="p-6 min-h-[24rem] max-h-[60vh] overflow-y-auto">
           {activeTab === 'general' && (
             <div className="space-y-6 animate-fadeIn">
-              <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                Tutor Mode
-              </h3>
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
+                  Tutor Mode
+                </h3>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-3">
+                  Current: <span className="font-semibold text-[var(--color-text-primary)]">
+                    {tutorModes.find(m => m.id === localSettings.selectedTutorMode)?.name || 'Standard Tutor'}
+                  </span>
+                </p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {tutorModes.map(mode => (
                   <button
