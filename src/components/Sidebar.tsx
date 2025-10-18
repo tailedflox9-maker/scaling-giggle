@@ -521,7 +521,7 @@ export function Sidebar({
         {!isFolded && (
           <div className="mt-2 text-center">
             <a
-              href="https://tanmay-kalbande.github.io/"
+              href="https://www.linkedin.com/in/tanmay-kalbande/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
