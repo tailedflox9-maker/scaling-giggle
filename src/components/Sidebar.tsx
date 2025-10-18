@@ -14,7 +14,7 @@ interface SidebarProps {
   currentNoteId: string | null;
   currentFlowchartId: string | null;
   onNewConversation: () => void;
-  onSelectConversation: (id: string) => void;
+  onSelectConversation: (id: string | null) => void; // MODIFIED: Prop type updated
   onSelectNote: (id: string | null) => void;
   onSelectFlowchart: (id: string | null) => void;
   onDeleteConversation: (id: string) => void;
@@ -61,7 +61,7 @@ export function Sidebar({
   const [editingTitle, setEditingTitle] = useState('');
   const [view, setView] = useState<'chats' | 'notes' | 'flowcharts'>('chats');
 
-  // Sync view with activeView prop - this is the KEY FIX
+  // Sync view with activeView prop
   useEffect(() => {
     if (activeView === 'chat') {
       setView('chats');
@@ -127,21 +127,18 @@ export function Sidebar({
     }
   };
 
-  // FIXED: This now properly triggers the parent to update activeView
+  // MODIFIED: This function now correctly handles all view switching
   const handleViewChange = (newView: 'chats' | 'notes' | 'flowcharts') => {
     setView(newView);
     setSearchQuery('');
     
     if (newView === 'chats') {
-      if (currentConversationId) {
-        onSelectConversation(currentConversationId);
-      } else if (sortedConversations.length > 0) {
-        onSelectConversation(sortedConversations[0].id);
-      }
+      const conversationToSelect = sortedConversations.length > 0 ? sortedConversations[0].id : null;
+      onSelectConversation(conversationToSelect);
     } else if (newView === 'notes') {
-      onSelectNote(currentNoteId || null);
+      onSelectNote(null);
     } else if (newView === 'flowcharts') {
-      onSelectFlowchart(currentFlowchartId || null);
+      onSelectFlowchart(null);
     }
   };
 
@@ -509,7 +506,8 @@ export function Sidebar({
             title="Flowcharts"
           >
             <GitBranch className="w-5 h-5" />
-            {!isFolded && <span className="text-xs font-semibold">Flow</span>}
+            {/* MODIFIED: Changed "Flow" to "Flows" for consistency */}
+            {!isFolded && <span className="text-xs font-semibold">Flows</span>}
           </button>
         </div>
         {!isFolded && (
