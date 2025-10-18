@@ -6,6 +6,7 @@ import { FlowchartView } from './components/FlowchartView';
 import { InstallPrompt } from './components/InstallPrompt';
 import { SettingsModal } from './components/SettingsModal';
 import { QuizModal } from './components/QuizModal';
+import { Notification } from './components/Notification';
 import { Conversation, Message, APISettings, Note, StudySession, Flowchart } from './types';
 import { generateId, generateConversationTitle } from './utils/helpers';
 import { usePWA } from './hooks/usePWA';
@@ -15,6 +16,12 @@ import { aiService } from './services/aiService';
 import { generateFlowchartFromConversation } from './services/flowchartGenerator';
 
 type ActiveView = 'chat' | 'note' | 'flowchart';
+
+interface NotificationState {
+  show: boolean;
+  message: string;
+  type: 'success' | 'error';
+}
 
 function App() {
   // --- STATE INITIALIZATION ---
@@ -40,10 +47,26 @@ function App() {
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [studySession, setStudySession] = useState<StudySession | null>(null);
   
+  // Notification state
+  const [notification, setNotification] = useState<NotificationState>({
+    show: false,
+    message: '',
+    type: 'success'
+  });
+  
   // Use AbortController for proper cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const { isInstallable, isInstalled, installApp, dismissInstallPrompt } = usePWA();
+  
+  // Helper function to show notifications
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ show: true, message, type });
+  };
+
+  const hideNotification = () => {
+    setNotification(prev => ({ ...prev, show: false }));
+  };
   
   // --- EFFECTS ---
   useEffect(() => {
@@ -161,11 +184,12 @@ function App() {
     };
     setConversations(prev => [newConversation, ...prev]);
     handleSelectConversation(newConversation.id);
+    showNotification('New conversation created!', 'success');
   };
 
   const handleSendMessage = async (content: string) => {
     if (!hasApiKey) {
-      alert('Please set your API key in the settings first.');
+      showNotification('Please set your API key in the settings first.', 'error');
       return;
     }
 
@@ -244,11 +268,15 @@ function App() {
       // Don't show error if request was aborted
       if (abortControllerRef.current?.signal.aborted) {
         console.log('Message generation was cancelled');
+        showNotification('Message generation stopped', 'success');
       } else {
         console.error('Error sending message:', error);
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        showNotification(`Failed to send message: ${errorMsg}`, 'error');
+        
         const errorMessage: Message = { 
           id: generateId(), 
-          content: `Sorry, an error occurred. Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+          content: `Sorry, an error occurred. Error: ${errorMsg}`, 
           role: 'assistant', 
           timestamp: new Date() 
         };
@@ -278,6 +306,7 @@ function App() {
       }
       return conv;
     }));
+    showNotification('Message updated successfully', 'success');
   };
 
   const handleRegenerateResponse = async (messageId: string) => {
@@ -290,6 +319,7 @@ function App() {
     const history = conversation.messages.slice(0, messageIndex);
     if (history.length === 0 || history[history.length - 1].role !== 'user') {
       console.error("Cannot regenerate without a preceding user message.");
+      showNotification('Cannot regenerate this message', 'error');
       return;
     }
     const messagesForApi = history.map(m => ({ role: m.role, content: m.content }));
@@ -328,12 +358,17 @@ function App() {
           ? { ...conv, messages: [...history, finalAssistantMessage], updatedAt: new Date() } 
           : conv
       ));
+      
+      showNotification('Response regenerated successfully', 'success');
     } catch (error) {
       if (!abortControllerRef.current?.signal.aborted) {
         console.error('Error regenerating response:', error);
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        showNotification(`Failed to regenerate: ${errorMsg}`, 'error');
+        
         const errorMessage: Message = { 
           id: generateId(), 
-          content: `Sorry, an error occurred while regenerating. Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+          content: `Sorry, an error occurred while regenerating. Error: ${errorMsg}`, 
           role: 'assistant', 
           timestamp: new Date() 
         };
@@ -364,6 +399,7 @@ function App() {
       setCurrentConversationId(newId);
       if (!newId) setActiveView('chat');
     }
+    showNotification('Conversation deleted', 'success');
   };
   
   // --- NOTE & QUIZ HANDLERS ---
@@ -378,7 +414,7 @@ function App() {
       sourceConversationId: currentConversationId,
     };
     setNotes(prev => [newNote, ...prev]);
-    alert("Note saved!");
+    showNotification('Note saved successfully!', 'success');
   };
 
   const handleDeleteNote = (id: string) => {
@@ -387,6 +423,7 @@ function App() {
       setCurrentNoteId(null);
       setActiveView('chat');
     }
+    showNotification('Note deleted', 'success');
   };
 
   const handleGenerateQuiz = async () => {
@@ -398,9 +435,11 @@ function App() {
       const session = await aiService.generateQuiz(conversation);
       setStudySession(session);
       setIsQuizModalOpen(true);
+      showNotification('Quiz generated successfully!', 'success');
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : 'Failed to generate quiz.');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to generate quiz';
+      showNotification(errorMsg, 'error');
     } finally {
       setIsQuizLoading(false);
     }
@@ -416,10 +455,11 @@ function App() {
       const flowchart = await generateFlowchartFromConversation(conversation);
       setFlowcharts(prev => [flowchart, ...prev]);
       handleSelectFlowchart(flowchart.id);
-      alert('Flowchart generated successfully!');
+      showNotification('Flowchart generated successfully!', 'success');
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : 'Failed to generate flowchart.');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to generate flowchart';
+      showNotification(errorMsg, 'error');
     } finally {
       setIsFlowchartLoading(false);
     }
@@ -438,61 +478,67 @@ function App() {
         return [{ ...flowchart, updatedAt: new Date() }, ...prev];
       }
     });
+    showNotification('Flowchart saved successfully', 'success');
   };
 
   const handleExportFlowchart = (flowchart: Flowchart) => {
-    // Create a clean, readable export format
-    const exportData = {
-      title: flowchart.title,
-      description: flowchart.description || '',
-      createdAt: flowchart.createdAt,
-      updatedAt: flowchart.updatedAt,
-      stats: {
-        totalNodes: flowchart.nodes.length,
-        totalConnections: flowchart.edges.length,
-        nodeTypes: {
-          start: flowchart.nodes.filter(n => n.type === 'start').length,
-          end: flowchart.nodes.filter(n => n.type === 'end').length,
-          topic: flowchart.nodes.filter(n => n.type === 'topic').length,
-          concept: flowchart.nodes.filter(n => n.type === 'concept').length,
-          decision: flowchart.nodes.filter(n => n.type === 'decision').length,
-          process: flowchart.nodes.filter(n => n.type === 'process').length,
-        }
-      },
-      nodes: flowchart.nodes.map(node => ({
-        id: node.id,
-        type: node.type,
-        label: node.label,
-        description: node.description || '',
-        position: {
-          x: node.position.x,
-          y: node.position.y
-        }
-      })),
-      connections: flowchart.edges.map(edge => ({
-        id: edge.id,
-        from: edge.source,
-        to: edge.target,
-        relationship: edge.label || 'connected to'
-      }))
-    };
+    try {
+      // Create a clean, readable export format
+      const exportData = {
+        title: flowchart.title,
+        description: flowchart.description || '',
+        createdAt: flowchart.createdAt,
+        updatedAt: flowchart.updatedAt,
+        stats: {
+          totalNodes: flowchart.nodes.length,
+          totalConnections: flowchart.edges.length,
+          nodeTypes: {
+            start: flowchart.nodes.filter(n => n.type === 'start').length,
+            end: flowchart.nodes.filter(n => n.type === 'end').length,
+            topic: flowchart.nodes.filter(n => n.type === 'topic').length,
+            concept: flowchart.nodes.filter(n => n.type === 'concept').length,
+            decision: flowchart.nodes.filter(n => n.type === 'decision').length,
+            process: flowchart.nodes.filter(n => n.type === 'process').length,
+          }
+        },
+        nodes: flowchart.nodes.map(node => ({
+          id: node.id,
+          type: node.type,
+          label: node.label,
+          description: node.description || '',
+          position: {
+            x: node.position.x,
+            y: node.position.y
+          }
+        })),
+        connections: flowchart.edges.map(edge => ({
+          id: edge.id,
+          from: edge.source,
+          to: edge.target,
+          relationship: edge.label || 'connected to'
+        }))
+      };
 
-    // Convert to formatted JSON
-    const jsonStr = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    // Create download link
-    const a = document.createElement('a');
-    a.href = url;
-    const fileName = `${flowchart.title.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    alert('Flowchart exported successfully as ' + fileName);
+      // Convert to formatted JSON
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const a = document.createElement('a');
+      a.href = url;
+      const fileName = `${flowchart.title.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showNotification(`Flowchart exported as ${fileName}`, 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      showNotification('Failed to export flowchart', 'error');
+    }
   };
 
   const handleDeleteFlowchart = (id: string) => {
@@ -501,6 +547,7 @@ function App() {
       setCurrentFlowchartId(null);
       setActiveView('chat');
     }
+    showNotification('Flowchart deleted', 'success');
   };
   
   // --- OTHER HANDLERS ---
@@ -508,33 +555,51 @@ function App() {
     const newSettings = { ...settings, selectedModel: model };
     setSettings(newSettings);
     storageUtils.saveSettings(newSettings);
+    
+    const modelNames = {
+      'google': 'Gemma',
+      'zhipu': 'ZhipuAI',
+      'mistral-small': 'Mistral',
+      'mistral-codestral': 'Codestral'
+    };
+    showNotification(`Switched to ${modelNames[model]} model`, 'success');
   };
 
   const handleRenameConversation = (id: string, newTitle: string) => {
     setConversations(prev => prev.map(c => 
       (c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c)
     ));
+    showNotification('Conversation renamed', 'success');
   };
 
   const handleTogglePinConversation = (id: string) => {
+    const conv = conversations.find(c => c.id === id);
     setConversations(prev => prev.map(c => 
       (c.id === id ? { ...c, isPinned: !c.isPinned, updatedAt: new Date() } : c)
     ));
+    if (conv) {
+      showNotification(conv.isPinned ? 'Conversation unpinned' : 'Conversation pinned', 'success');
+    }
   };
 
   const handleSaveSettings = (newSettings: APISettings) => { 
     setSettings(newSettings); 
     storageUtils.saveSettings(newSettings); 
-    setSettingsOpen(false); 
+    setSettingsOpen(false);
+    showNotification('Settings saved successfully', 'success');
   };
 
   const handleInstallApp = async () => { 
-    if (await installApp()) console.log('App installed'); 
+    if (await installApp()) {
+      console.log('App installed');
+      showNotification('App installed successfully!', 'success');
+    }
   };
 
   const handleStopGenerating = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      showNotification('Generation stopped', 'success');
     }
   };
 
@@ -552,6 +617,15 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Notification */}
+      {notification.show && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={hideNotification}
+        />
+      )}
+      
       {sidebarOpen && window.innerWidth < 1024 && (
         <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
       )}
