@@ -92,9 +92,19 @@ export function FlowchartCanvas({
   const [editingLabel, setEditingLabel] = useState('');
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Detect mobile on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Calculate bounding box and center flowchart on load
   const centerFlowchart = useCallback(() => {
@@ -115,26 +125,38 @@ export function FlowchartCanvas({
       maxY = Math.max(maxY, node.position.y);
     });
 
-    // Add padding
-    const padding = 200;
+    // Add padding (reduce for mobile)
+    const padding = isMobile ? 80 : 200;
     minX -= padding;
     maxX += padding;
     minY -= padding;
     maxY += padding;
 
-    // Calculate center offset with zoom 1
+    // Calculate flowchart dimensions
+    const flowchartWidth = maxX - minX;
+    const flowchartHeight = maxY - minY;
+
+    // Calculate zoom to fit content
+    let zoom = 1;
+    if (flowchartWidth > 0 && flowchartHeight > 0) {
+      const zoomX = canvasWidth / flowchartWidth;
+      const zoomY = canvasHeight / flowchartHeight;
+      zoom = Math.min(zoomX, zoomY, 1.5); // Cap at 1.5x
+    }
+
+    // Center offset
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
 
-    const offsetX = canvasWidth / 2 - centerX;
-    const offsetY = canvasHeight / 2 - centerY;
+    const offsetX = canvasWidth / 2 - centerX * zoom;
+    const offsetY = canvasHeight / 2 - centerY * zoom;
 
     setViewport({
       x: offsetX,
       y: offsetY,
-      zoom: 1
+      zoom: Math.max(0.5, zoom)
     });
-  }, [nodes]);
+  }, [nodes, isMobile]);
 
   // Center on initial load
   useEffect(() => {
@@ -151,7 +173,7 @@ export function FlowchartCanvas({
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setViewport(prev => ({
       ...prev,
-      zoom: Math.max(0.1, Math.min(3, prev.zoom * delta)),
+      zoom: Math.max(0.3, Math.min(3, prev.zoom * delta)),
     }));
   }, []);
 
@@ -226,6 +248,45 @@ export function FlowchartCanvas({
     setDragStart(null);
   }, []);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (readOnly || e.touches.length > 1) return;
+    
+    const canvas = e.currentTarget as HTMLElement;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+    
+    setDragStart({ x, y });
+    setIsPanning(true);
+  }, [readOnly]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragStart || e.touches.length > 1) return;
+    e.preventDefault();
+
+    const canvas = e.currentTarget as HTMLElement;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+    const dx = x - dragStart.x;
+    const dy = y - dragStart.y;
+
+    if (isPanning) {
+      setViewport(prev => ({
+        ...prev,
+        x: prev.x + dx,
+        y: prev.y + dy,
+      }));
+      setDragStart({ x, y });
+    }
+  }, [dragStart, isPanning]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsPanning(false);
+    setDraggingNodeId(null);
+    setDragStart(null);
+  }, []);
+
   const handleNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
     if (readOnly || tool === 'pan') return;
     e.stopPropagation();
@@ -258,7 +319,7 @@ export function FlowchartCanvas({
   }, [editingNodeId, editingLabel, nodes, onNodesChange]);
 
   const zoomIn = () => setViewport(prev => ({ ...prev, zoom: Math.min(3, prev.zoom * 1.2) }));
-  const zoomOut = () => setViewport(prev => ({ ...prev, zoom: Math.max(0.1, prev.zoom / 1.2) }));
+  const zoomOut = () => setViewport(prev => ({ ...prev, zoom: Math.max(0.3, prev.zoom / 1.2) }));
   const resetView = () => centerFlowchart();
 
   // Generate curved path between two points
@@ -267,22 +328,17 @@ export function FlowchartCanvas({
     const dy = y2 - y1;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // Calculate control points for smoother curves
     const curvature = 0.3;
     const controlPointOffset = distance * curvature;
-    
-    // Determine if connection is more vertical or horizontal
     const isVertical = Math.abs(dy) > Math.abs(dx);
     
     if (isVertical) {
-      // Vertical connection - control points offset horizontally
       const cx1 = x1;
       const cy1 = y1 + controlPointOffset;
       const cx2 = x2;
       const cy2 = y2 - controlPointOffset;
       return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
     } else {
-      // Horizontal connection - control points offset vertically
       const cx1 = x1 + controlPointOffset;
       const cy1 = y1;
       const cx2 = x2 - controlPointOffset;
@@ -300,9 +356,23 @@ export function FlowchartCanvas({
     const x = node.position.x * viewport.zoom + viewport.x;
     const y = node.position.y * viewport.zoom + viewport.y;
 
-    // Adjust size based on node type
-    const minWidth = node.type === 'start' || node.type === 'end' ? '120px' : '100px';
-    const maxWidth = node.type === 'start' || node.type === 'end' ? '200px' : '180px';
+    // Responsive sizing - smaller on mobile
+    let minWidth = '100px';
+    let maxWidth = '180px';
+    let fontSize = 'text-sm';
+    let padding = 'px-3 py-2';
+
+    if (isMobile) {
+      minWidth = '80px';
+      maxWidth = '140px';
+      fontSize = 'text-xs';
+      padding = 'px-2 py-1.5';
+    }
+
+    if (node.type === 'start' || node.type === 'end') {
+      minWidth = isMobile ? '100px' : '120px';
+      maxWidth = isMobile ? '160px' : '200px';
+    }
 
     return (
       <div
@@ -321,7 +391,7 @@ export function FlowchartCanvas({
         onMouseLeave={() => setHoveredNodeId(null)}
       >
         <div
-          className={`relative px-3 py-2 font-semibold text-center border ${style.shape} ${isSelected ? 'ring-2 ring-[var(--color-accent-bg)]' : ''}`}
+          className={`relative ${padding} font-semibold text-center border ${style.shape} ${isSelected ? 'ring-2 ring-[var(--color-accent-bg)]' : ''}`}
           style={{
             backgroundColor: style.bg,
             borderColor: style.border,
@@ -345,12 +415,12 @@ export function FlowchartCanvas({
                     setEditingLabel('');
                   }
                 }}
-                className="w-full bg-[var(--color-bg)] text-[var(--color-text-primary)] text-center border border-[var(--color-border)] outline-none rounded px-2 py-1"
+                className={`w-full bg-[var(--color-bg)] text-[var(--color-text-primary)] text-center border border-[var(--color-border)] outline-none rounded px-2 py-1 ${fontSize}`}
                 autoFocus
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              <span className="text-sm font-medium">{node.label}</span>
+              <span className={`${fontSize} font-medium`}>{node.label}</span>
             )}
           </div>
         </div>
@@ -369,10 +439,7 @@ export function FlowchartCanvas({
     const x2 = targetNode.position.x * viewport.zoom + viewport.x;
     const y2 = targetNode.position.y * viewport.zoom + viewport.y;
 
-    // Generate curved path
     const pathData = generateCurvedPath(x1, y1, x2, y2);
-
-    // Calculate position for label (approximate midpoint of curve)
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
 
@@ -394,7 +461,6 @@ export function FlowchartCanvas({
           </marker>
         </defs>
         
-        {/* Shadow path for depth */}
         <path
           d={pathData}
           stroke="rgba(42, 42, 42, 0.6)"
@@ -403,7 +469,6 @@ export function FlowchartCanvas({
           className={edge.style?.animated ? 'animate-pulse' : ''}
         />
         
-        {/* Main path */}
         <path
           d={pathData}
           stroke="#A0A0A"
@@ -413,13 +478,12 @@ export function FlowchartCanvas({
           className={edge.style?.animated ? 'animate-pulse' : ''}
         />
         
-        {/* Edge label with background */}
         {edge.label && (
           <g>
             {(() => {
               const textLength = edge.label.length;
-              const rectWidth = Math.max(textLength * 8 + 16, 60);
-              const rectHeight = 28;
+              const rectWidth = Math.max(textLength * (isMobile ? 6 : 8) + 16, 60);
+              const rectHeight = isMobile ? 24 : 28;
               
               return (
                 <>
@@ -437,7 +501,7 @@ export function FlowchartCanvas({
                     x={midX}
                     y={midY + 5}
                     fill="#FFFFFF"
-                    fontSize="13"
+                    fontSize={isMobile ? "11" : "13"}
                     fontWeight="600"
                     textAnchor="middle"
                     className="pointer-events-none select-none"
@@ -456,21 +520,21 @@ export function FlowchartCanvas({
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-bg)]">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between p-3 bg-[var(--color-sidebar)] border-b border-[var(--color-border)] flex-wrap gap-y-2 sm:flex-nowrap">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{title || 'Flowchart'}</h2>
-          <span className="text-xs text-[var(--color-text-secondary)] px-2 py-1 bg-[var(--color-card)] rounded">
+      {/* Toolbar - Responsive */}
+      <div className="flex items-center justify-between p-2 sm:p-3 bg-[var(--color-sidebar)] border-b border-[var(--color-border)] flex-wrap gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto order-1">
+          <h2 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] truncate">{title || 'Flowchart'}</h2>
+          <span className="text-xs text-[var(--color-text-secondary)] px-2 py-1 bg-[var(--color-card)] rounded whitespace-nowrap">
             {nodes.length} nodes
           </span>
         </div>
         
-        <div className="flex items-center gap-2 flex-wrap justify-end w-full sm:w-auto">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto order-3 sm:order-2">
           {!readOnly && (
             <>
               <button
                 onClick={() => setTool('select')}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
                   tool === 'select'
                     ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)]'
@@ -481,7 +545,7 @@ export function FlowchartCanvas({
               </button>
               <button
                 onClick={() => setTool('pan')}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
                   tool === 'pan'
                     ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)]'
@@ -490,30 +554,30 @@ export function FlowchartCanvas({
               >
                 <Hand className="w-4 h-4" />
               </button>
-              <div className="w-px h-6 bg-[var(--color-border)]" />
+              <div className="w-px h-5 bg-[var(--color-border)] hidden sm:block" />
             </>
           )}
           
           <button
             onClick={zoomOut}
-            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
             title="Zoom Out"
           >
             <Minus className="w-4 h-4" />
           </button>
-          <span className="text-sm text-[var(--color-text-secondary)] min-w-[4rem] text-center">
+          <span className="text-xs text-[var(--color-text-secondary)] min-w-[3rem] text-center">
             {Math.round(viewport.zoom * 100)}%
           </span>
           <button
             onClick={zoomIn}
-            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
             title="Zoom In"
           >
             <Plus className="w-4 h-4" />
           </button>
           <button
             onClick={resetView}
-            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
             title="Center View"
           >
             <Maximize2 className="w-4 h-4" />
@@ -521,11 +585,11 @@ export function FlowchartCanvas({
           
           {!readOnly && (
             <>
-              <div className="w-px h-6 bg-[var(--color-border)]" />
+              <div className="w-px h-5 bg-[var(--color-border)] hidden sm:block" />
               {selectedNodeId && (
                 <button
                   onClick={handleDeleteNode}
-                  className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
                   title="Delete Node"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -537,7 +601,7 @@ export function FlowchartCanvas({
           {onExport && (
             <button
               onClick={onExport}
-              className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
               title="Export"
             >
               <Download className="w-4 h-4" />
@@ -546,7 +610,7 @@ export function FlowchartCanvas({
         </div>
       </div>
 
-      {/* Canvas */}
+      {/* Canvas - Responsive */}
       <div
         ref={canvasRef}
         className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing"
@@ -554,6 +618,9 @@ export function FlowchartCanvas({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Grid background */}
         <div
