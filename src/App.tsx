@@ -6,7 +6,6 @@ import { FlowchartView } from './components/FlowchartView';
 import { InstallPrompt } from './components/InstallPrompt';
 import { SettingsModal } from './components/SettingsModal';
 import { QuizModal } from './components/QuizModal';
-import { Notification } from './components/Notification';
 import { Conversation, Message, APISettings, Note, StudySession, Flowchart } from './types';
 import { generateId, generateConversationTitle } from './utils/helpers';
 import { usePWA } from './hooks/usePWA';
@@ -16,11 +15,6 @@ import { aiService } from './services/aiService';
 import { generateFlowchartFromConversation } from './services/flowchartGenerator';
 
 type ActiveView = 'chat' | 'note' | 'flowchart';
-
-interface NotificationState {
-  message: string;
-  type: 'success' | 'error';
-}
 
 function App() {
   // --- STATE INITIALIZATION ---
@@ -32,7 +26,10 @@ function App() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
   const [currentFlowchartId, setCurrentFlowchartId] = useState<string | null>(null);
-  const [sidebarFolded, setSidebarFolded] = useState(() => JSON.parse(localStorage.getItem('ai-tutor-sidebar-folded') || 'false'));
+  const [sidebarFolded, setSidebarFolded] = useState(() => {
+    const stored = localStorage.getItem('ai-tutor-sidebar-folded');
+    return stored ? JSON.parse(stored) : false;
+  });
   
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isQuizLoading, setIsQuizLoading] = useState(false);
@@ -42,7 +39,6 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [studySession, setStudySession] = useState<StudySession | null>(null);
-  const [notification, setNotification] = useState<NotificationState | null>(null);
   
   // Use AbortController for proper cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -169,7 +165,7 @@ function App() {
 
   const handleSendMessage = async (content: string) => {
     if (!hasApiKey) {
-      setNotification({ message: 'Please set your API key in the settings first.', type: 'error' });
+      alert('Please set your API key in the settings first.');
       return;
     }
 
@@ -382,7 +378,7 @@ function App() {
       sourceConversationId: currentConversationId,
     };
     setNotes(prev => [newNote, ...prev]);
-    setNotification({ message: 'Note saved successfully!', type: 'success' });
+    alert("Note saved!");
   };
 
   const handleDeleteNote = (id: string) => {
@@ -404,8 +400,7 @@ function App() {
       setIsQuizModalOpen(true);
     } catch (error) {
       console.error(error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate quiz.';
-      setNotification({ message: errorMessage, type: 'error' });
+      alert(error instanceof Error ? error.message : 'Failed to generate quiz.');
     } finally {
       setIsQuizLoading(false);
     }
@@ -421,11 +416,10 @@ function App() {
       const flowchart = await generateFlowchartFromConversation(conversation);
       setFlowcharts(prev => [flowchart, ...prev]);
       handleSelectFlowchart(flowchart.id);
-      setNotification({ message: 'Flowchart generated successfully!', type: 'success' });
+      alert('Flowchart generated successfully!');
     } catch (error) {
       console.error(error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate flowchart.';
-      setNotification({ message: errorMessage, type: 'error' });
+      alert(error instanceof Error ? error.message : 'Failed to generate flowchart.');
     } finally {
       setIsFlowchartLoading(false);
     }
@@ -498,7 +492,7 @@ function App() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    setNotification({ message: `Flowchart exported as ${fileName}`, type: 'success' });
+    alert('Flowchart exported successfully as ' + fileName);
   };
 
   const handleDeleteFlowchart = (id: string) => {
@@ -636,13 +630,6 @@ function App() {
       />
       {isInstallable && !isInstalled && ( 
         <InstallPrompt onInstall={handleInstallApp} onDismiss={dismissInstallPrompt} /> 
-      )}
-      {notification && (
-        <Notification
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-        />
       )}
     </div>
   );
