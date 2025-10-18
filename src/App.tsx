@@ -148,8 +148,9 @@ function App() {
   
   const hasApiKey = !!(settings.googleApiKey || settings.zhipuApiKey || settings.mistralApiKey);
   
-  // --- GENERAL HANDLERS (FIXED) ---
-  const handleSelectConversation = (id: string) => {
+  // --- GENERAL HANDLERS ---
+  // MODIFIED: Allow `id` to be `null` to handle the empty welcome screen state
+  const handleSelectConversation = (id: string | null) => {
     setActiveView('chat');
     setCurrentConversationId(id);
     setCurrentNoteId(null);
@@ -192,14 +193,9 @@ function App() {
       return;
     }
 
-    if (!content.trim()) {
-      showNotification('Please enter a message.', 'error');
-      return;
-    }
-
     const userMessage: Message = { 
       id: generateId(), 
-      content: content.trim(), 
+      content, 
       role: 'user', 
       timestamp: new Date() 
     };
@@ -298,17 +294,12 @@ function App() {
   };
 
   const handleEditMessage = (messageId: string, newContent: string) => {
-    if (!newContent.trim()) {
-      showNotification('Message cannot be empty.', 'error');
-      return;
-    }
-
     setConversations(prev => prev.map(conv => {
       if (conv.id === currentConversationId) {
         return {
           ...conv,
           messages: conv.messages.map(msg =>
-            msg.id === messageId ? { ...msg, content: newContent.trim() } : msg
+            msg.id === messageId ? { ...msg, content: newContent } : msg
           ),
           updatedAt: new Date(),
         };
@@ -398,43 +389,22 @@ function App() {
   }), [conversations]);
 
   const handleDeleteConversation = (id: string) => {
-    const conversationToDelete = conversations.find(c => c.id === id);
-    if (!conversationToDelete) return;
-
     const remaining = conversations.filter(c => c.id !== id);
     setConversations(remaining);
-    
     if (currentConversationId === id) {
-      const sorted = sortedConversations.filter(c => c.id !== id);
-      const newId = sorted.length > 0 ? sorted[0].id : null;
-      
-      if (newId) {
-        setCurrentConversationId(newId);
-      } else {
-        setCurrentConversationId(null);
-        setActiveView('chat');
-      }
+      const newId = remaining.length > 0 ? sortedConversations.filter(c => c.id !== id)[0]?.id : null;
+      setCurrentConversationId(newId);
+      if (!newId) setActiveView('chat');
     }
-
-    showNotification('Conversation deleted', 'success');
   };
   
   // --- NOTE & QUIZ HANDLERS ---
   const handleSaveAsNote = (content: string) => {
-    if (!currentConversationId) {
-      showNotification('No active conversation to save from.', 'error');
-      return;
-    }
-    
-    if (!content.trim()) {
-      showNotification('Cannot save empty note.', 'error');
-      return;
-    }
-    
+    if (!currentConversationId) return;
     const newNote: Note = {
       id: generateId(), 
       title: generateConversationTitle(content), 
-      content: content.trim(), 
+      content, 
       createdAt: new Date(), 
       updatedAt: new Date(), 
       sourceConversationId: currentConversationId,
@@ -448,24 +418,12 @@ function App() {
     if(currentNoteId === id) {
       setCurrentNoteId(null);
       setActiveView('chat');
-      if (sortedConversations.length > 0) {
-        setCurrentConversationId(sortedConversations[0].id);
-      }
     }
-    showNotification('Note deleted', 'success');
   };
 
   const handleGenerateQuiz = async () => {
     const conversation = conversations.find(c => c.id === currentConversationId);
-    if (!conversation) {
-      showNotification('No active conversation found.', 'error');
-      return;
-    }
-
-    if (conversation.messages.length < 2) {
-      showNotification('Need at least 2 messages to generate a quiz.', 'error');
-      return;
-    }
+    if (!conversation) return;
 
     setIsQuizLoading(true);
     try {
@@ -485,15 +443,7 @@ function App() {
   // --- FLOWCHART HANDLERS ---
   const handleGenerateFlowchart = async () => {
     const conversation = conversations.find(c => c.id === currentConversationId);
-    if (!conversation) {
-      showNotification('No active conversation found.', 'error');
-      return;
-    }
-
-    if (conversation.messages.length < 2) {
-      showNotification('Need at least 2 messages to generate a flowchart.', 'error');
-      return;
-    }
+    if (!conversation) return;
 
     setIsFlowchartLoading(true);
     try {
@@ -586,11 +536,7 @@ function App() {
     if (currentFlowchartId === id) {
       setCurrentFlowchartId(null);
       setActiveView('chat');
-      if (sortedConversations.length > 0) {
-        setCurrentConversationId(sortedConversations[0].id);
-      }
     }
-    showNotification('Flowchart deleted', 'success');
   };
   
   // --- OTHER HANDLERS ---
@@ -598,17 +544,11 @@ function App() {
     const newSettings = { ...settings, selectedModel: model };
     setSettings(newSettings);
     storageUtils.saveSettings(newSettings);
-    showNotification(`Model switched to ${model}`, 'success');
   };
 
   const handleRenameConversation = (id: string, newTitle: string) => {
-    if (!newTitle.trim()) {
-      showNotification('Title cannot be empty.', 'error');
-      return;
-    }
-
     setConversations(prev => prev.map(c => 
-      (c.id === id ? { ...c, title: newTitle.trim(), updatedAt: new Date() } : c)
+      (c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c)
     ));
   };
 
@@ -622,7 +562,6 @@ function App() {
     setSettings(newSettings); 
     storageUtils.saveSettings(newSettings); 
     setSettingsOpen(false);
-    showNotification('Settings saved successfully!', 'success');
   };
 
   const handleInstallApp = async () => { 
