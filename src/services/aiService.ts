@@ -129,6 +129,92 @@ class AiService {
     return tutorPrompts[this.settings.selectedTutorMode] || tutorPrompts.standard;
   }
 
+  // NEW: Method specifically for flowchart generation that ALWAYS uses Google Gemini 2.5 Flash
+  public async *generateFlowchartResponse(
+    messages: { role: string; content: string }[]
+  ): AsyncGenerator<string> {
+    if (!this.settings.googleApiKey) {
+      throw new Error('Google API key not set. Flowchart generation requires Google API.');
+    }
+
+    if (!messages || messages.length === 0) {
+      throw new Error('No messages provided');
+    }
+
+    const userMessages = messages.map(m => ({ role: m.role, content: m.content }));
+    
+    // Use minimal system prompt for flowchart generation
+    const systemPrompt = 'You are a helpful assistant that generates flowcharts in JSON format.';
+
+    const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${this.settings.googleApiKey}&alt=sse`;
+
+    // Prepend system prompt + user messages (Gemini-compatible)
+    const googleMessages = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: 'Understood. I will follow this role.' }] },
+      ...userMessages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      })),
+    ];
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for flowchart
+
+    try {
+      const response = await fetch(googleUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: googleMessages }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Google API Error: ${response.status} - ${errorBody}`);
+      }
+
+      if (!response.body) throw new Error('Response body is null');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const json = JSON.parse(line.substring(6));
+                const chunk = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (chunk) yield chunk;
+              } catch (e) { 
+                console.error('Error parsing Google stream:', e); 
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Flowchart generation timed out');
+      }
+      throw error;
+    }
+  }
+
   // Unified streaming response generator with error handling
   public async *generateStreamingResponse(
     messages: { role: string; content: string }[]
@@ -285,11 +371,11 @@ Return ONLY valid JSON. No markdown or extra text.
 `;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for quiz
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${this.settings.googleApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.settings.googleApiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
