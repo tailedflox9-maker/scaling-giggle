@@ -69,7 +69,7 @@ const StreamingIndicator = React.memo(() => (
   </span>
 ));
 
-// Memoized action buttons - now a more compact toolbar
+// Memoized action buttons - compact toolbar
 const ActionButtons = React.memo(({ isUser, onRegenerate, onEdit, onCopy, onSaveNote, onExport, copied, noteSaved }: {
   isUser: boolean;
   onRegenerate?: () => void;
@@ -270,35 +270,21 @@ export function MessageBubble({
 
   return (
     <div
-      className={`message-wrapper flex items-center gap-3 ${isUser ? 'justify-end' : 'justify-start'} group transition-all duration-200 ease-out will-change-transform`}
+      className={`message-wrapper flex gap-3 sm:gap-4 ${isUser ? 'justify-end' : 'justify-start'} transition-all duration-200 ease-out will-change-transform`}
     >
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-card)]">
+        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-card)] self-start">
           <Sparkles className="w-4 h-4 text-[var(--color-text-secondary)]" />
         </div>
       )}
-
-      {isUser && !isEditing && !isStreaming && message.content.length > 0 && onEditMessage && (
-        <div className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform-gpu group-hover:scale-100 scale-95">
-          <ActionButtons
-            isUser={isUser}
-            onEdit={handleEdit}
-            onCopy={handleCopy}
-            onSaveNote={handleSaveNote}
-            onExport={handleExport}
-            copied={copied}
-            noteSaved={noteSaved}
-          />
-        </div>
-      )}
-
-      <div className="message-bubble bg-[var(--color-card)] p-3 sm:p-4 rounded-xl min-h-[3rem] flex flex-col">
+      
+      <div className="message-bubble relative group bg-[var(--color-card)] p-3 sm:p-4 rounded-xl min-h-[3rem] flex flex-col">
         {!isUser && displayModel && (
           <div className="text-xs text-[var(--color-text-secondary)] mb-2 font-medium tracking-wide">
             {displayModel}
           </div>
         )}
-
+        
         {isEditing ? (
           <div className="space-y-3">
             <textarea
@@ -341,25 +327,25 @@ export function MessageBubble({
             {isStreaming && <StreamingIndicator />}
           </div>
         )}
+        
+        {!isEditing && !isStreaming && message.content.length > 0 && onEditMessage && (
+          <div className="absolute -bottom-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <ActionButtons
+              isUser={isUser}
+              onRegenerate={onRegenerateResponse ? handleRegenerate : undefined}
+              onEdit={handleEdit}
+              onCopy={handleCopy}
+              onSaveNote={handleSaveNote}
+              onExport={handleExport}
+              copied={copied}
+              noteSaved={noteSaved}
+            />
+          </div>
+        )}
       </div>
-
-      {!isUser && !isEditing && !isStreaming && message.content.length > 0 && onEditMessage && (
-        <div className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform-gpu group-hover:scale-100 scale-95">
-          <ActionButtons
-            isUser={isUser}
-            onRegenerate={onRegenerateResponse ? handleRegenerate : undefined}
-            onEdit={handleEdit}
-            onCopy={handleCopy}
-            onSaveNote={handleSaveNote}
-            onExport={handleExport}
-            copied={copied}
-            noteSaved={noteSaved}
-          />
-        </div>
-      )}
-
+      
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-card)]">
+        <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-card)] self-start">
           <Smile className="w-4 h-4 text-[var(--color-text-secondary)]" />
         </div>
       )}
