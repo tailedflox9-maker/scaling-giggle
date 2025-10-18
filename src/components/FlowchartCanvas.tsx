@@ -84,9 +84,69 @@ export function FlowchartCanvas({
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Calculate bounding box and center flowchart on load
+  const centerFlowchart = useCallback(() => {
+    if (!canvasRef.current || nodes.length === 0) return;
+
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const canvasWidth = canvasRect.width;
+    const canvasHeight = canvasRect.height;
+
+    // Find bounding box of all nodes
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    nodes.forEach(node => {
+      minX = Math.min(minX, node.position.x);
+      maxX = Math.max(maxX, node.position.x);
+      minY = Math.min(minY, node.position.y);
+      maxY = Math.max(maxY, node.position.y);
+    });
+
+    // Add padding (node width/height estimation)
+    const padding = 150;
+    minX -= padding;
+    maxX += padding;
+    minY -= padding;
+    maxY += padding;
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+
+    // Calculate zoom to fit
+    const zoomX = canvasWidth / contentWidth;
+    const zoomY = canvasHeight / contentHeight;
+    const optimalZoom = Math.min(zoomX, zoomY, 1.5); // Max zoom 1.5x
+
+    // Calculate center offset
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    const offsetX = canvasWidth / 2 - centerX * optimalZoom;
+    const offsetY = canvasHeight / 2 - centerY * optimalZoom;
+
+    setViewport({
+      x: offsetX,
+      y: offsetY,
+      zoom: optimalZoom
+    });
+  }, [nodes]);
+
+  // Center on initial load
+  useEffect(() => {
+    if (!isInitialized && nodes.length > 0) {
+      // Delay to ensure canvas is rendered
+      setTimeout(() => {
+        centerFlowchart();
+        setIsInitialized(true);
+      }, 100);
+    }
+  }, [nodes, isInitialized, centerFlowchart]);
 
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
@@ -201,7 +261,7 @@ export function FlowchartCanvas({
 
   const zoomIn = () => setViewport(prev => ({ ...prev, zoom: Math.min(3, prev.zoom * 1.2) }));
   const zoomOut = () => setViewport(prev => ({ ...prev, zoom: Math.max(0.1, prev.zoom / 1.2) }));
-  const resetView = () => setViewport({ x: 0, y: 0, zoom: 1 });
+  const resetView = () => centerFlowchart();
 
   const renderNode = (node: FlowchartNode) => {
     const style = nodeTypeStyles[node.type];
@@ -275,41 +335,79 @@ export function FlowchartCanvas({
     const x2 = targetNode.position.x * viewport.zoom + viewport.x;
     const y2 = targetNode.position.y * viewport.zoom + viewport.y;
 
+    // Calculate midpoint for label
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+
     return (
       <g key={edge.id}>
         <defs>
           <marker
             id={`arrowhead-${edge.id}`}
-            markerWidth="10"
-            markerHeight="10"
-            refX="9"
-            refY="3"
+            markerWidth="12"
+            markerHeight="12"
+            refX="10"
+            refY="4"
             orient="auto"
           >
-            <polygon points="0 0, 10 3, 0 6" fill="var(--color-text-secondary)" />
+            <polygon 
+              points="0 0, 12 4, 0 8" 
+              fill="#9CA3AF"
+              style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.5))' }}
+            />
           </marker>
         </defs>
+        
+        {/* Main line with shadow effect */}
         <line
           x1={x1}
           y1={y1}
           x2={x2}
           y2={y2}
-          stroke="var(--color-text-secondary)"
-          strokeWidth="2"
+          stroke="rgba(0,0,0,0.3)"
+          strokeWidth="5"
           markerEnd={`url(#arrowhead-${edge.id})`}
           className={edge.style?.animated ? 'animate-pulse' : ''}
         />
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke="#9CA3AF"
+          strokeWidth="3"
+          markerEnd={`url(#arrowhead-${edge.id})`}
+          className={edge.style?.animated ? 'animate-pulse' : ''}
+        />
+        
+        {/* Edge label with background */}
         {edge.label && (
-          <text
-            x={(x1 + x2) / 2}
-            y={(y1 + y2) / 2}
-            fill="var(--color-text-secondary)"
-            fontSize="12"
-            textAnchor="middle"
-            className="pointer-events-none"
-          >
-            {edge.label}
-          </text>
+          <g>
+            {/* Background rectangle for label */}
+            <rect
+              x={midX - 40}
+              y={midY - 12}
+              width="80"
+              height="24"
+              fill="rgba(17, 24, 39, 0.9)"
+              stroke="#374151"
+              strokeWidth="1"
+              rx="4"
+            />
+            {/* Label text */}
+            <text
+              x={midX}
+              y={midY + 4}
+              fill="#E5E7EB"
+              fontSize="14"
+              fontWeight="600"
+              textAnchor="middle"
+              className="pointer-events-none"
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+            >
+              {edge.label}
+            </text>
+          </g>
         )}
       </g>
     );
@@ -375,7 +473,7 @@ export function FlowchartCanvas({
           <button
             onClick={resetView}
             className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
-            title="Reset View"
+            title="Center View"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
