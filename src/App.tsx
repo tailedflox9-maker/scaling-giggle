@@ -158,20 +158,18 @@ function App() {
   };
 
   const handleSelectNote = (id: string | null) => {
-    setCurrentNoteId(id);
-    // Always set activeView to 'note' when this handler is called
+    // ALWAYS set to note view when this is called
     setActiveView('note');
-    // Clear other selections
+    setCurrentNoteId(id);
     setCurrentConversationId(null);
     setCurrentFlowchartId(null);
     if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
   const handleSelectFlowchart = (id: string | null) => {
-    setCurrentFlowchartId(id);
-    // Always set activeView to 'flowchart' when this handler is called
+    // ALWAYS set to flowchart view when this is called
     setActiveView('flowchart');
-    // Clear other selections
+    setCurrentFlowchartId(id);
     setCurrentNoteId(null);
     setCurrentConversationId(null);
     if (window.innerWidth < 1024) setSidebarOpen(false);
