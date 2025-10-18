@@ -3,7 +3,7 @@ export function generateId(): string {
 }
 
 export function generateConversationTitle(firstMessage: string): string {
-  const maxLength = 50;
+  const maxLength = 80; // Increased from 50 to 80
   const cleaned = firstMessage.trim().replace(/\n+/g, ' ');
   return cleaned.length > maxLength 
     ? cleaned.slice(0, maxLength).trim() + '...'
