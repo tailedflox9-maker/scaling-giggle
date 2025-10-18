@@ -2,30 +2,35 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatArea } from './components/ChatArea';
 import { NoteView } from './components/NoteView';
+import { FlowchartView } from './components/FlowchartView';
 import { InstallPrompt } from './components/InstallPrompt';
 import { SettingsModal } from './components/SettingsModal';
 import { QuizModal } from './components/QuizModal';
-import { Conversation, Message, APISettings, Note, StudySession } from './types';
+import { Conversation, Message, APISettings, Note, StudySession, Flowchart } from './types';
 import { generateId, generateConversationTitle } from './utils/helpers';
 import { usePWA } from './hooks/usePWA';
 import { Menu } from 'lucide-react';
 import { storageUtils } from './utils/storage';
 import { aiService } from './services/aiService';
+import { generateFlowchartFromConversation } from './services/flowchartGenerator';
 
-type ActiveView = 'chat' | 'note';
+type ActiveView = 'chat' | 'note' | 'flowchart';
 
 function App() {
   // --- STATE INITIALIZATION ---
   const [conversations, setConversations] = useState<Conversation[]>(() => storageUtils.getConversations());
   const [notes, setNotes] = useState<Note[]>(() => storageUtils.getNotes());
+  const [flowcharts, setFlowcharts] = useState<Flowchart[]>(() => storageUtils.getFlowcharts());
   const [settings, setSettings] = useState<APISettings>(() => storageUtils.getSettings());
   const [activeView, setActiveView] = useState<ActiveView>('chat');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
+  const [currentFlowchartId, setCurrentFlowchartId] = useState<string | null>(null);
   const [sidebarFolded, setSidebarFolded] = useState(() => JSON.parse(localStorage.getItem('ai-tutor-sidebar-folded') || 'false'));
   
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isQuizLoading, setIsQuizLoading] = useState(false);
+  const [isFlowchartLoading, setIsFlowchartLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -82,6 +87,13 @@ function App() {
     return () => clearTimeout(timeoutId);
   }, [notes]);
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      storageUtils.saveFlowcharts(flowcharts);
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [flowcharts]);
+
   useEffect(() => { 
     localStorage.setItem('ai-tutor-sidebar-folded', JSON.stringify(sidebarFolded)); 
   }, [sidebarFolded]);
@@ -102,6 +114,11 @@ function App() {
     notes.find(n => n.id === currentNoteId), 
     [notes, currentNoteId]
   );
+
+  const currentFlowchart = useMemo(() => 
+    flowcharts.find(f => f.id === currentFlowchartId), 
+    [flowcharts, currentFlowchartId]
+  );
   
   const hasApiKey = !!(settings.googleApiKey || settings.zhipuApiKey || settings.mistralApiKey);
   
@@ -110,12 +127,22 @@ function App() {
     setActiveView('chat');
     setCurrentConversationId(id);
     setCurrentNoteId(null);
+    setCurrentFlowchartId(null);
     if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
   const handleSelectNote = (id: string | null) => {
     setActiveView('note');
     setCurrentNoteId(id);
+    setCurrentConversationId(null);
+    setCurrentFlowchartId(null);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
+  };
+
+  const handleSelectFlowchart = (id: string | null) => {
+    setActiveView('flowchart');
+    setCurrentFlowchartId(id);
+    setCurrentNoteId(null);
     setCurrentConversationId(null);
     if (window.innerWidth < 1024) setSidebarOpen(false);
   };
@@ -149,7 +176,7 @@ function App() {
     let conversationToUpdate: Conversation;
     const existingConversation = conversations.find(c => c.id === currentConversationId);
 
-    if (activeView === 'note' || !existingConversation) {
+    if (activeView !== 'chat' || !existingConversation) {
       conversationToUpdate = {
         id: generateId(),
         title: generateConversationTitle(content),
@@ -234,6 +261,10 @@ function App() {
       abortControllerRef.current = null;
     }
   };
+
+  // Continued in Part 2...
+
+// ... Continued from Part 1
 
   const handleEditMessage = (messageId: string, newContent: string) => {
     setConversations(prev => prev.map(conv => {
@@ -375,6 +406,52 @@ function App() {
       setIsQuizLoading(false);
     }
   };
+
+  // --- FLOWCHART HANDLERS ---
+  const handleGenerateFlowchart = async () => {
+    const conversation = conversations.find(c => c.id === currentConversationId);
+    if (!conversation) return;
+
+    setIsFlowchartLoading(true);
+    try {
+      const flowchart = await generateFlowchartFromConversation(conversation);
+      setFlowcharts(prev => [flowchart, ...prev]);
+      handleSelectFlowchart(flowchart.id);
+      alert('Flowchart generated successfully!');
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : 'Failed to generate flowchart.');
+    } finally {
+      setIsFlowchartLoading(false);
+    }
+  };
+
+  const handleSaveFlowchart = (flowchart: Flowchart) => {
+    setFlowcharts(prev => prev.map(f => 
+      f.id === flowchart.id ? flowchart : f
+    ));
+  };
+
+  const handleExportFlowchart = (flowchart: Flowchart) => {
+    const dataStr = JSON.stringify(flowchart, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${flowchart.title.replace(/\s+/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDeleteFlowchart = (id: string) => {
+    setFlowcharts(prev => prev.filter(f => f.id !== id));
+    if (currentFlowchartId === id) {
+      setCurrentFlowchartId(null);
+      setActiveView('chat');
+    }
+  };
   
   // --- OTHER HANDLERS ---
   const handleModelChange = (model: 'google' | 'zhipu' | 'mistral-small' | 'mistral-codestral') => {
@@ -416,6 +493,15 @@ function App() {
     [notes]
   );
 
+  const sortedFlowcharts = useMemo(() => 
+    [...flowcharts].sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    ), 
+    [flowcharts]
+  );
+
+// ... Continued from Part 2
+
   return (
     <div className="app-container">
       {sidebarOpen && window.innerWidth < 1024 && (
@@ -424,16 +510,20 @@ function App() {
       <Sidebar
         conversations={sortedConversations}
         notes={sortedNotes}
+        flowcharts={sortedFlowcharts}
         activeView={activeView}
         currentConversationId={currentConversationId}
         currentNoteId={currentNoteId}
+        currentFlowchartId={currentFlowchartId}
         onNewConversation={handleNewConversation}
         onSelectConversation={handleSelectConversation}
         onSelectNote={handleSelectNote}
+        onSelectFlowchart={handleSelectFlowchart}
         onDeleteConversation={handleDeleteConversation}
         onRenameConversation={handleRenameConversation}
         onTogglePinConversation={handleTogglePinConversation}
         onDeleteNote={handleDeleteNote}
+        onDeleteFlowchart={handleDeleteFlowchart}
         onOpenSettings={() => setSettingsOpen(true)}
         settings={settings}
         onModelChange={handleModelChange}
@@ -459,16 +549,24 @@ function App() {
             onSendMessage={handleSendMessage}
             isLoading={isChatLoading}
             isQuizLoading={isQuizLoading}
+            isFlowchartLoading={isFlowchartLoading}
             streamingMessage={streamingMessage}
             hasApiKey={hasApiKey}
             onStopGenerating={handleStopGenerating}
             onSaveAsNote={handleSaveAsNote}
             onGenerateQuiz={handleGenerateQuiz}
+            onGenerateFlowchart={handleGenerateFlowchart}
             onEditMessage={handleEditMessage}
             onRegenerateResponse={handleRegenerateResponse}
           />
-        ) : (
+        ) : activeView === 'note' ? (
           <NoteView note={currentNote} />
+        ) : (
+          <FlowchartView 
+            flowchart={currentFlowchart}
+            onSave={handleSaveFlowchart}
+            onExport={handleExportFlowchart}
+          />
         )}
       </div>
       <SettingsModal 
