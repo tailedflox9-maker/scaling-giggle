@@ -61,7 +61,7 @@ export function Sidebar({
   const [editingTitle, setEditingTitle] = useState('');
   const [view, setView] = useState<'chats' | 'notes' | 'flowcharts'>('chats');
 
-  // Sync view with activeView
+  // Sync view with activeView prop
   useEffect(() => {
     if (activeView === 'chat') {
       setView('chats');
@@ -132,6 +132,10 @@ export function Sidebar({
     setSearchQuery('');
     
     if (newView === 'chats') {
+      // Clear notes and flowcharts first to ensure clean state
+      onSelectNote(null);
+      onSelectFlowchart(null);
+      
       // Switch to chat view
       if (currentConversationId) {
         // If there's already a selected conversation, select it again to trigger chat view
@@ -139,14 +143,14 @@ export function Sidebar({
       } else if (sortedConversations.length > 0) {
         // Select the first conversation
         onSelectConversation(sortedConversations[0].id);
-      } else {
-        // No conversations - trigger note/flowchart deselection to show empty chat
-        onSelectNote(null);
-        onSelectFlowchart(null);
       }
     } else if (newView === 'notes') {
+      // Clear other selections
+      onSelectFlowchart(null);
       onSelectNote(null);
     } else if (newView === 'flowcharts') {
+      // Clear other selections
+      onSelectNote(null);
       onSelectFlowchart(null);
     }
   };
