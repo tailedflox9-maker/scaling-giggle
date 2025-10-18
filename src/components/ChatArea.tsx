@@ -55,8 +55,9 @@ export function ChatArea({
   const canGenerateQuiz = conversation && conversation.messages.length > 2;
   const canGenerateFlowchart = conversation && conversation.messages.length > 2;
 
-  // --- FIX: Show welcome screen if no conversation OR if conversation is empty ---
-  if (!conversation || conversation.messages.length === 0) {
+  // Show welcome screen ONLY if there's no conversation selected
+  // If conversation exists but is empty, show the chat area with input
+  if (!conversation) {
     return (
       <div className="chat-area">
         <div className="flex-1 flex items-center justify-center p-4">
@@ -92,6 +93,7 @@ export function ChatArea({
     );
   }
 
+  // If conversation exists (even with 0 messages), show the chat interface
   return (
     <div className="chat-area">
       <div
@@ -99,18 +101,37 @@ export function ChatArea({
         className="chat-messages scroll-container"
       >
         <div className="chat-messages-container">
-          <div className="space-y-4 sm:space-y-6 py-4 sm:py-6">
-            {allMessages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isStreaming={streamingMessage?.id === message.id}
-                onSaveAsNote={onSaveAsNote}
-                onEditMessage={onEditMessage}
-                onRegenerateResponse={onRegenerateResponse}
-              />
-            ))}
-          </div>
+          {conversation.messages.length === 0 && !streamingMessage ? (
+            // Empty state for existing conversation with no messages yet
+            <div className="flex items-center justify-center h-full py-12">
+              <div className="text-center max-w-md w-full px-4">
+                <img
+                  src="/white-logo.png"
+                  alt="AI Tutor Logo"
+                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 opacity-50"
+                />
+                <h3 className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)] mb-2">
+                  {conversation.title}
+                </h3>
+                <p className="text-sm text-[var(--color-text-secondary)] opacity-80">
+                  Start chatting below
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 sm:space-y-6 py-4 sm:py-6">
+              {allMessages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  isStreaming={streamingMessage?.id === message.id}
+                  onSaveAsNote={onSaveAsNote}
+                  onEditMessage={onEditMessage}
+                  onRegenerateResponse={onRegenerateResponse}
+                />
+              ))}
+            </div>
+          )}
           <div ref={messagesEndRef} className="h-1 flex-shrink-0" />
         </div>
       </div>
