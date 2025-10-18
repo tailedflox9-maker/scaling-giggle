@@ -1,24 +1,30 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, PlusCircle, Square, ClipboardCheck, Loader2 } from 'lucide-react';
+import { Send, PlusCircle, Square, ClipboardCheck, GitBranch, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   isQuizLoading: boolean;
+  isFlowchartLoading: boolean;
   disabled?: boolean;
   onStopGenerating: () => void;
   onGenerateQuiz: () => void;
+  onGenerateFlowchart: () => void;
   canGenerateQuiz: boolean;
+  canGenerateFlowchart: boolean;
 }
 
 export function ChatInput({
   onSendMessage,
   isLoading,
   isQuizLoading,
+  isFlowchartLoading,
   disabled = false,
   onStopGenerating,
   onGenerateQuiz,
-  canGenerateQuiz
+  onGenerateFlowchart,
+  canGenerateQuiz,
+  canGenerateFlowchart
 }: ChatInputProps) {
   const [input, setInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -146,6 +152,25 @@ export function ChatInput({
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <ClipboardCheck className="w-4 h-4" />
+            )}
+          </button>
+
+          {/* Flowchart button */}
+          <button
+            type="button"
+            onClick={onGenerateFlowchart}
+            disabled={!canGenerateFlowchart || isFlowchartLoading || isLoading}
+            className={`interactive-button w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-200 ${
+              !canGenerateFlowchart || isFlowchartLoading || isLoading
+                ? 'bg-transparent text-[var(--color-text-placeholder)] cursor-not-allowed opacity-50'
+                : 'bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-border)]'
+            }`}
+            title={'Generate Flowchart'}
+          >
+            {isFlowchartLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <GitBranch className="w-4 h-4" />
             )}
           </button>
 
