@@ -79,14 +79,18 @@ export function Sidebar({
     { id: 'mistral-codestral', icon: Terminal, name: 'Codestral' },
   ];
 
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+      return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+    });
+  }, [conversations]);
+
   const filteredConversations = useMemo(() => {
-    return conversations
-      .filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
-      .sort((a, b) => {
-        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-        return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
-      });
-  }, [conversations, searchQuery]);
+    return sortedConversations.filter(c => 
+      c.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [sortedConversations, searchQuery]);
 
   const filteredNotes = useMemo(() => {
     return notes.filter(n =>
@@ -125,10 +129,22 @@ export function Sidebar({
 
   const handleViewChange = (newView: 'chats' | 'notes' | 'flowcharts') => {
     setView(newView);
-    setSearchQuery(''); // Clear search when changing views
+    setSearchQuery('');
     
-    // Update active view in parent
-    if (newView === 'notes') {
+    if (newView === 'chats') {
+      // Switch to chat view
+      if (currentConversationId) {
+        // If there's already a selected conversation, select it again to trigger chat view
+        onSelectConversation(currentConversationId);
+      } else if (sortedConversations.length > 0) {
+        // Select the first conversation
+        onSelectConversation(sortedConversations[0].id);
+      } else {
+        // No conversations - trigger note/flowchart deselection to show empty chat
+        onSelectNote(null);
+        onSelectFlowchart(null);
+      }
+    } else if (newView === 'notes') {
       onSelectNote(null);
     } else if (newView === 'flowcharts') {
       onSelectFlowchart(null);
@@ -288,7 +304,7 @@ export function Sidebar({
                       ) : (
                         <span className="flex-1 text-sm font-semibold truncate">{conversation.title}</span>
                       )}
-                      <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-0.5">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
