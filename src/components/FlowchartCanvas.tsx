@@ -363,15 +363,15 @@ export function FlowchartCanvas({
     let padding = 'px-3 py-2';
 
     if (isMobile) {
-      minWidth = '80px';
-      maxWidth = '140px';
+      minWidth = '70px';
+      maxWidth = '120px';
       fontSize = 'text-xs';
-      padding = 'px-2 py-1.5';
+      padding = 'px-2 py-1';
     }
 
     if (node.type === 'start' || node.type === 'end') {
-      minWidth = isMobile ? '100px' : '120px';
-      maxWidth = isMobile ? '160px' : '200px';
+      minWidth = isMobile ? '85px' : '120px';
+      maxWidth = isMobile ? '130px' : '200px';
     }
 
     return (
@@ -521,15 +521,15 @@ export function FlowchartCanvas({
   return (
     <div className="flex flex-col h-full bg-[var(--color-bg)]">
       {/* Toolbar - Responsive */}
-      <div className="flex items-center justify-between p-2 sm:p-3 bg-[var(--color-sidebar)] border-b border-[var(--color-border)] flex-wrap gap-2">
-        <div className="flex items-center gap-2 w-full sm:w-auto order-1">
-          <h2 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] truncate">{title || 'Flowchart'}</h2>
-          <span className="text-xs text-[var(--color-text-secondary)] px-2 py-1 bg-[var(--color-card)] rounded whitespace-nowrap">
+      <div className="flex items-center justify-between p-3 bg-[var(--color-sidebar)] border-b border-[var(--color-border)] flex-wrap gap-2 md:gap-y-0 gap-y-2">
+        <div className="flex items-center gap-2 w-full md:w-auto order-1 min-w-0">
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)] truncate flex-1 md:flex-none">{title || 'Flowchart'}</h2>
+          <span className="text-xs text-[var(--color-text-secondary)] px-2 py-1 bg-[var(--color-card)] rounded whitespace-nowrap flex-shrink-0">
             {nodes.length} nodes
           </span>
         </div>
         
-        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full sm:w-auto order-3 sm:order-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end w-full md:w-auto order-3 sm:order-2">
           {!readOnly && (
             <>
               <button
@@ -554,7 +554,7 @@ export function FlowchartCanvas({
               >
                 <Hand className="w-4 h-4" />
               </button>
-              <div className="w-px h-5 bg-[var(--color-border)] hidden sm:block" />
+              <div className="w-px h-5 bg-[var(--color-border)] hidden md:block" />
             </>
           )}
           
@@ -585,7 +585,7 @@ export function FlowchartCanvas({
           
           {!readOnly && (
             <>
-              <div className="w-px h-5 bg-[var(--color-border)] hidden sm:block" />
+              <div className="w-px h-5 bg-[var(--color-border)] hidden md:block" />
               {selectedNodeId && (
                 <button
                   onClick={handleDeleteNode}
