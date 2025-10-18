@@ -1,3 +1,4 @@
+// src/components/Notification.tsx
 import React, { useEffect } from 'react';
 import { CheckCircle, XCircle, X } from 'lucide-react';
 
@@ -11,7 +12,7 @@ export function Notification({ message, type, onClose }: NotificationProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
-    }, 5000); // Auto-dismiss after 5 seconds
+    }, 4000); // Auto-dismiss after 4 seconds
 
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -19,32 +20,25 @@ export function Notification({ message, type, onClose }: NotificationProps) {
   const isSuccess = type === 'success';
 
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 w-full max-w-sm sm:max-w-md bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-2xl p-4 z-[100] animate-fade-in-up">
-      <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 mt-0.5">
+    <div className="fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 sm:max-w-sm bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-xl p-4 z-[100] animate-slide-up">
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0">
           {isSuccess ? (
-            <CheckCircle className="w-6 h-6 text-green-500" />
+            <CheckCircle className="w-5 h-5 text-emerald-500" />
           ) : (
-            <XCircle className="w-6 h-6 text-red-500" />
+            <XCircle className="w-5 h-5 text-red-500" />
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-[var(--color-text-primary)] text-base">
-            {isSuccess ? 'Success' : 'Error'}
-          </h3>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1 break-words">
-            {message}
-          </p>
-        </div>
-        <div className="flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="interactive-button w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--color-border)] transition-colors"
-            aria-label="Close notification"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <p className="text-sm font-medium text-[var(--color-text-primary)] flex-1 break-words">
+          {message}
+        </p>
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 ml-2 interactive-button w-5 h-5 flex items-center justify-center rounded hover:bg-[var(--color-border)] transition-colors"
+          aria-label="Close notification"
+        >
+          <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
+        </button>
       </div>
     </div>
   );
