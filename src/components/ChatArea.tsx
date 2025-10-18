@@ -54,7 +54,7 @@ export function ChatArea({
   }, [allMessages.length, streamingMessage?.content, scrollToBottom]);
 
   const canGenerateQuiz = conversation && conversation.messages.length > 2;
-  const canGenerateFlowchart = conversation && conversation.messages.length > 2;
+  const canGenerateFlowchart = conversation && conversation.messages.length > 1;
 
   // State 1: No conversation is selected at all. Show the main welcome screen.
   if (!conversation) {
