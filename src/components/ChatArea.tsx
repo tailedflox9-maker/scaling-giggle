@@ -8,11 +8,13 @@ interface ChatAreaProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   isQuizLoading: boolean;
+  isFlowchartLoading: boolean;
   streamingMessage?: Message | null;
   hasApiKey: boolean;
   onStopGenerating: () => void;
   onSaveAsNote: (content: string) => void;
   onGenerateQuiz: () => void;
+  onGenerateFlowchart: () => void;
   onEditMessage?: (messageId: string, newContent: string) => void;
   onRegenerateResponse?: (messageId: string) => void;
 }
@@ -22,11 +24,13 @@ export function ChatArea({
   onSendMessage,
   isLoading,
   isQuizLoading,
+  isFlowchartLoading,
   streamingMessage,
   hasApiKey,
   onStopGenerating,
   onSaveAsNote,
   onGenerateQuiz,
+  onGenerateFlowchart,
   onEditMessage,
   onRegenerateResponse,
 }: ChatAreaProps) {
@@ -49,6 +53,7 @@ export function ChatArea({
   }, [allMessages.length, streamingMessage?.content, scrollToBottom]);
 
   const canGenerateQuiz = conversation && conversation.messages.length > 2;
+  const canGenerateFlowchart = conversation && conversation.messages.length > 2;
 
   if (!conversation) {
     return (
@@ -73,10 +78,13 @@ export function ChatArea({
             onSendMessage={onSendMessage}
             isLoading={isLoading}
             isQuizLoading={isQuizLoading}
+            isFlowchartLoading={isFlowchartLoading}
             disabled={!hasApiKey}
             onStopGenerating={onStopGenerating}
             onGenerateQuiz={onGenerateQuiz}
+            onGenerateFlowchart={onGenerateFlowchart}
             canGenerateQuiz={false}
+            canGenerateFlowchart={false}
           />
         </div>
       </div>
@@ -111,10 +119,13 @@ export function ChatArea({
           onSendMessage={onSendMessage}
           isLoading={isLoading}
           isQuizLoading={isQuizLoading}
+          isFlowchartLoading={isFlowchartLoading}
           disabled={!hasApiKey}
           onStopGenerating={onStopGenerating}
           onGenerateQuiz={onGenerateQuiz}
+          onGenerateFlowchart={onGenerateFlowchart}
           canGenerateQuiz={!!canGenerateQuiz}
+          canGenerateFlowchart={!!canGenerateFlowchart}
         />
       </div>
     </div>
