@@ -555,14 +555,16 @@ export function FlowchartCanvas({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* Dot grid background */}
+        {/* Grid background */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 opacity-10"
           style={{
-            backgroundImage: `radial-gradient(circle, #888888 1.5px, transparent 1.5px)`,
+            backgroundImage: `
+              linear-gradient(var(--color-border) 1px, transparent 1px),
+              linear-gradient(90deg, var(--color-border) 1px, transparent 1px)
+            `,
             backgroundSize: `${20 * viewport.zoom}px ${20 * viewport.zoom}px`,
             backgroundPosition: `${viewport.x}px ${viewport.y}px`,
-            opacity: 0.6,
           }}
         />
 
