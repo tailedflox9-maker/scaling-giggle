@@ -14,7 +14,7 @@ interface SidebarProps {
   currentNoteId: string | null;
   currentFlowchartId: string | null;
   onNewConversation: () => void;
-  onSelectConversation: (id: string | null) => void; // MODIFIED: Prop type updated
+  onSelectConversation: (id: string | null) => void;
   onSelectNote: (id: string | null) => void;
   onSelectFlowchart: (id: string | null) => void;
   onDeleteConversation: (id: string) => void;
@@ -127,7 +127,6 @@ export function Sidebar({
     }
   };
 
-  // MODIFIED: This function now correctly handles all view switching
   const handleViewChange = (newView: 'chats' | 'notes' | 'flowcharts') => {
     setView(newView);
     setSearchQuery('');
@@ -268,7 +267,7 @@ export function Sidebar({
                 <div
                   key={conversation.id}
                   onClick={() => onSelectConversation(conversation.id)}
-                  className={`group flex items-center gap-2 ${isFolded ? 'justify-center p-2' : 'p-2.5'} rounded-lg cursor-pointer transition-colors relative ${
+                  className={`group flex flex-col gap-1 ${isFolded ? 'justify-center p-2' : 'p-2.5'} rounded-lg cursor-pointer transition-colors relative ${
                     activeView === 'chat' && currentConversationId === conversation.id
                       ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
                       : 'hover:bg-[var(--color-card)] text-[var(--color-text-primary)]'
@@ -278,9 +277,12 @@ export function Sidebar({
                   {conversation.isPinned && !isFolded && (
                     <Pin className="w-3 h-3 absolute top-1.5 left-1.5 text-yellow-400" />
                   )}
-                  <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                  {!isFolded && (
-                    <>
+                  
+                  {isFolded ? (
+                    <MessageSquare className="w-4 h-4" />
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" />
                       {editingId === conversation.id ? (
                         <input
                           type="text"
@@ -293,9 +295,19 @@ export function Sidebar({
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
-                        <span className="flex-1 text-sm font-semibold truncate">{conversation.title}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold truncate">
+                            {conversation.title}
+                          </div>
+                          {/* Preview of last message */}
+                          {conversation.messages.length > 0 && (
+                            <div className="text-xs opacity-60 line-clamp-2 mt-0.5">
+                              {conversation.messages[conversation.messages.length - 1].content.slice(0, 80)}
+                            </div>
+                          )}
+                        </div>
                       )}
-                      <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-0.5">
+                      <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-0.5 flex-shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -333,7 +345,7 @@ export function Sidebar({
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               ))
@@ -506,7 +518,6 @@ export function Sidebar({
             title="Flowcharts"
           >
             <GitBranch className="w-5 h-5" />
-            {/* MODIFIED: Changed "Flow" to "Flows" for consistency */}
             {!isFolded && <span className="text-xs font-semibold">Flows</span>}
           </button>
         </div>
