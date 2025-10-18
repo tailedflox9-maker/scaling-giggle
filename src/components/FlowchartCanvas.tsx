@@ -115,25 +115,17 @@ export function FlowchartCanvas({
     minY -= padding;
     maxY += padding;
 
-    const contentWidth = maxX - minX;
-    const contentHeight = maxY - minY;
-
-    // Calculate zoom to fit - more conservative for readability
-    const zoomX = canvasWidth / contentWidth;
-    const zoomY = canvasHeight / contentHeight;
-    const optimalZoom = Math.min(zoomX, zoomY, 0.9); // Max zoom 0.9x for better text readability
-
-    // Calculate center offset
+    // Calculate center offset with zoom 1
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
 
-    const offsetX = canvasWidth / 2 - centerX * optimalZoom;
-    const offsetY = canvasHeight / 2 - centerY * optimalZoom;
+    const offsetX = canvasWidth / 2 - centerX;
+    const offsetY = canvasHeight / 2 - centerY;
 
     setViewport({
       x: offsetX,
       y: offsetY,
-      zoom: optimalZoom
+      zoom: 1
     });
   }, [nodes]);
 
@@ -344,16 +336,15 @@ export function FlowchartCanvas({
         <defs>
           <marker
             id={`arrowhead-${edge.id}`}
-            markerWidth="8"
-            markerHeight="8"
-            refX="7"
-            refY="3"
+            markerWidth="6"
+            markerHeight="6"
+            refX="5"
+            refY="2.5"
             orient="auto"
           >
             <polygon 
-              points="0 0, 8 3, 0 6" 
+              points="0 0, 6 2.5, 0 5" 
               fill="#9CA3AF"
-              style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.5))' }}
             />
           </marker>
         </defs>
@@ -383,30 +374,41 @@ export function FlowchartCanvas({
         {/* Edge label with background */}
         {edge.label && (
           <g>
-            {/* Background rectangle for label */}
-            <rect
-              x={midX - 40}
-              y={midY - 12}
-              width="80"
-              height="24"
-              fill="rgba(17, 24, 39, 0.9)"
-              stroke="#374151"
-              strokeWidth="1"
-              rx="4"
-            />
-            {/* Label text */}
-            <text
-              x={midX}
-              y={midY + 4}
-              fill="#E5E7EB"
-              fontSize="14"
-              fontWeight="600"
-              textAnchor="middle"
-              className="pointer-events-none"
-              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
-            >
-              {edge.label}
-            </text>
+            {/* Measure text to create proper background */}
+            {(() => {
+              const textLength = edge.label.length;
+              const rectWidth = Math.max(textLength * 8 + 16, 60);
+              const rectHeight = 28;
+              
+              return (
+                <>
+                  {/* Background rectangle for label */}
+                  <rect
+                    x={midX - rectWidth / 2}
+                    y={midY - rectHeight / 2}
+                    width={rectWidth}
+                    height={rectHeight}
+                    fill="rgba(17, 24, 39, 0.95)"
+                    stroke="#4B5563"
+                    strokeWidth="1.5"
+                    rx="6"
+                  />
+                  {/* Label text */}
+                  <text
+                    x={midX}
+                    y={midY + 5}
+                    fill="#F3F4F6"
+                    fontSize="14"
+                    fontWeight="600"
+                    textAnchor="middle"
+                    className="pointer-events-none select-none"
+                    style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}
+                  >
+                    {edge.label}
+                  </text>
+                </>
+              );
+            })()}
           </g>
         )}
       </g>
