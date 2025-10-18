@@ -390,21 +390,15 @@ Generate the quiz now:`;
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.settings.googleApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${this.settings.googleApiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [
-              { 
-                role: 'user', 
-                parts: [{ text: prompt }] 
-              }
+              { role: 'user', parts: [{ text: prompt }] },
+              { role: 'model', parts: [{ text: 'Understood. I will return only JSON.' }] }
             ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 2048,
-            }
           }),
           signal: controller.signal,
         }
