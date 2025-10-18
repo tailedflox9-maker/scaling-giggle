@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatArea } from './components/ChatArea';
@@ -619,15 +621,14 @@ function App() {
     const conversation = conversations.find(c => c.id === currentConversationId);
     if (conversation && conversation.messages.length > 0) {
       // Find the last assistant message
-      const lastAssistantIndex = conversation.messages.length - 1;
-      const lastMessage = conversation.messages[lastAssistantIndex];
+      const lastAssistantMessage = [...conversation.messages].reverse().find(m => m.role === 'assistant');
       
-      if (lastMessage.role === 'assistant') {
+      if (lastAssistantMessage) {
         // Wait a bit for the mode to update
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Trigger regeneration
-        handleRegenerateResponse(lastMessage.id);
+        handleRegenerateResponse(lastAssistantMessage.id);
       }
     }
   };
@@ -661,10 +662,38 @@ function App() {
     ));
   };
 
-  const handleSaveSettings = (newSettings: APISettings) => { 
-    setSettings(newSettings); 
-    storageUtils.saveSettings(newSettings); 
+  const handleSaveSettings = (newSettings: APISettings) => {
+    const oldMode = settings.selectedTutorMode;
+    const newMode = newSettings.selectedTutorMode;
+
+    setSettings(newSettings);
+    storageUtils.saveSettings(newSettings);
     setSettingsOpen(false);
+
+    // If tutor mode was changed, regenerate the last response
+    if (oldMode !== newMode) {
+      const modeNames: Record<TutorMode, string> = {
+        standard: 'Standard Tutor',
+        exam: 'Exam Coach',
+        mentor: 'Friendly Mentor',
+        creative: 'Creative Guide'
+      };
+      showNotification(`Switched to ${modeNames[newMode]} mode. Regenerating response...`, 'success');
+
+      const conversation = conversations.find(c => c.id === currentConversationId);
+      if (conversation && conversation.messages.length > 0) {
+        const lastAssistantMessage = [...conversation.messages].reverse().find(
+          (msg) => msg.role === 'assistant'
+        );
+        
+        if (lastAssistantMessage) {
+          // Use a timeout to ensure settings state propagates before API call
+          setTimeout(() => {
+            handleRegenerateResponse(lastAssistantMessage.id);
+          }, 100);
+        }
+      }
+    }
   };
 
   const handleInstallApp = async () => { 
@@ -788,7 +817,6 @@ function App() {
         onClose={() => setSettingsOpen(false)} 
         settings={settings} 
         onSaveSettings={handleSaveSettings}
-        onTutorModeChange={handleTutorModeChange}
       />
       <QuizModal 
         isOpen={isQuizModalOpen} 
