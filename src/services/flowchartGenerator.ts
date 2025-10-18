@@ -297,7 +297,7 @@ export async function generateFlowchartFromConversation(
     
     for await (const chunk of aiService.generateStreamingResponse([
       { role: 'user', content: prompt }
-    ], 'models/gemini-2.0-flash-exp')) {
+    ], 'models/gemini-2.5-flash')) {
       fullResponse += chunk;
     }
     
