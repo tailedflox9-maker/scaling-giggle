@@ -457,15 +457,15 @@ export function FlowchartCanvas({
   return (
     <div className="flex flex-col h-full bg-[var(--color-bg)]">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-3 bg-[var(--color-sidebar)] border-b border-[var(--color-border)]">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between p-3 bg-[var(--color-sidebar)] border-b border-[var(--color-border)] flex-wrap gap-y-2 sm:flex-nowrap">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{title || 'Flowchart'}</h2>
           <span className="text-xs text-[var(--color-text-secondary)] px-2 py-1 bg-[var(--color-card)] rounded">
             {nodes.length} nodes
           </span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end w-full sm:w-auto">
           {!readOnly && (
             <>
               <button
@@ -529,15 +529,6 @@ export function FlowchartCanvas({
                   title="Delete Node"
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-              {onSave && (
-                <button
-                  onClick={onSave}
-                  className="flex items-center gap-2 px-3 py-2 bg-[var(--color-accent-bg)] text-[var(--color-accent-text)] rounded-lg hover:bg-[var(--color-accent-bg-hover)] transition-colors font-semibold"
-                >
-                  <Save className="w-4 h-4" />
-                  Save
                 </button>
               )}
             </>
