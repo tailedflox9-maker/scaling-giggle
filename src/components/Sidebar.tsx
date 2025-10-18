@@ -132,10 +132,6 @@ export function Sidebar({
     setSearchQuery('');
     
     if (newView === 'chats') {
-      // Clear notes and flowcharts first to ensure clean state
-      onSelectNote(null);
-      onSelectFlowchart(null);
-      
       // Switch to chat view
       if (currentConversationId) {
         // If there's already a selected conversation, select it again to trigger chat view
@@ -144,14 +140,13 @@ export function Sidebar({
         // Select the first conversation
         onSelectConversation(sortedConversations[0].id);
       }
+      // If no conversations exist, the handler will show the welcome screen
     } else if (newView === 'notes') {
-      // Clear other selections
-      onSelectFlowchart(null);
-      onSelectNote(null);
+      // Don't call onSelectNote(null) - this was causing the issue
+      // The activeView will be synced via useEffect from parent
     } else if (newView === 'flowcharts') {
-      // Clear other selections
-      onSelectNote(null);
-      onSelectFlowchart(null);
+      // Don't call onSelectFlowchart(null) - this was causing the issue
+      // The activeView will be synced via useEffect from parent
     }
   };
 
