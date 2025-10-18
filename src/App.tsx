@@ -184,7 +184,6 @@ function App() {
     };
     setConversations(prev => [newConversation, ...prev]);
     handleSelectConversation(newConversation.id);
-    showNotification('New conversation created!', 'success');
   };
 
   const handleSendMessage = async (content: string) => {
@@ -306,7 +305,6 @@ function App() {
       }
       return conv;
     }));
-    showNotification('Message updated successfully', 'success');
   };
 
   const handleRegenerateResponse = async (messageId: string) => {
@@ -358,8 +356,6 @@ function App() {
           ? { ...conv, messages: [...history, finalAssistantMessage], updatedAt: new Date() } 
           : conv
       ));
-      
-      showNotification('Response regenerated successfully', 'success');
     } catch (error) {
       if (!abortControllerRef.current?.signal.aborted) {
         console.error('Error regenerating response:', error);
@@ -399,7 +395,6 @@ function App() {
       setCurrentConversationId(newId);
       if (!newId) setActiveView('chat');
     }
-    showNotification('Conversation deleted', 'success');
   };
   
   // --- NOTE & QUIZ HANDLERS ---
@@ -423,7 +418,6 @@ function App() {
       setCurrentNoteId(null);
       setActiveView('chat');
     }
-    showNotification('Note deleted', 'success');
   };
 
   const handleGenerateQuiz = async () => {
@@ -469,12 +463,10 @@ function App() {
     setFlowcharts(prev => {
       const index = prev.findIndex(f => f.id === flowchart.id);
       if (index !== -1) {
-        // Update existing flowchart
         const updated = [...prev];
         updated[index] = { ...flowchart, updatedAt: new Date() };
         return updated;
       } else {
-        // This shouldn't happen, but handle it just in case
         return [{ ...flowchart, updatedAt: new Date() }, ...prev];
       }
     });
@@ -483,7 +475,6 @@ function App() {
 
   const handleExportFlowchart = (flowchart: Flowchart) => {
     try {
-      // Create a clean, readable export format
       const exportData = {
         title: flowchart.title,
         description: flowchart.description || '',
@@ -519,12 +510,10 @@ function App() {
         }))
       };
 
-      // Convert to formatted JSON
       const jsonStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
-      // Create download link
       const a = document.createElement('a');
       a.href = url;
       const fileName = `${flowchart.title.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
@@ -547,7 +536,6 @@ function App() {
       setCurrentFlowchartId(null);
       setActiveView('chat');
     }
-    showNotification('Flowchart deleted', 'success');
   };
   
   // --- OTHER HANDLERS ---
@@ -555,38 +543,24 @@ function App() {
     const newSettings = { ...settings, selectedModel: model };
     setSettings(newSettings);
     storageUtils.saveSettings(newSettings);
-    
-    const modelNames = {
-      'google': 'Gemma',
-      'zhipu': 'ZhipuAI',
-      'mistral-small': 'Mistral',
-      'mistral-codestral': 'Codestral'
-    };
-    showNotification(`Switched to ${modelNames[model]} model`, 'success');
   };
 
   const handleRenameConversation = (id: string, newTitle: string) => {
     setConversations(prev => prev.map(c => 
       (c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c)
     ));
-    showNotification('Conversation renamed', 'success');
   };
 
   const handleTogglePinConversation = (id: string) => {
-    const conv = conversations.find(c => c.id === id);
     setConversations(prev => prev.map(c => 
       (c.id === id ? { ...c, isPinned: !c.isPinned, updatedAt: new Date() } : c)
     ));
-    if (conv) {
-      showNotification(conv.isPinned ? 'Conversation unpinned' : 'Conversation pinned', 'success');
-    }
   };
 
   const handleSaveSettings = (newSettings: APISettings) => { 
     setSettings(newSettings); 
     storageUtils.saveSettings(newSettings); 
     setSettingsOpen(false);
-    showNotification('Settings saved successfully', 'success');
   };
 
   const handleInstallApp = async () => { 
