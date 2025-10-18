@@ -7,13 +7,15 @@ import { InstallPrompt } from './components/InstallPrompt';
 import { SettingsModal } from './components/SettingsModal';
 import { QuizModal } from './components/QuizModal';
 import { Notification } from './components/Notification';
-import { Conversation, Message, APISettings, Note, StudySession, Flowchart } from './types';
+import { ModeSuggestionBanner } from './components/ModeSuggestionBanner';
+import { Conversation, Message, APISettings, Note, StudySession, Flowchart, TutorMode } from './types';
 import { generateId, generateConversationTitle } from './utils/helpers';
 import { usePWA } from './hooks/usePWA';
 import { Menu } from 'lucide-react';
 import { storageUtils } from './utils/storage';
 import { aiService } from './services/aiService';
 import { generateFlowchartFromConversation } from './services/flowchartGenerator';
+import { detectBestMode, shouldSuggestMode } from './services/modeDetection';
 
 type ActiveView = 'chat' | 'note' | 'flowchart';
 
@@ -53,6 +55,12 @@ function App() {
     message: '',
     type: 'success'
   });
+
+  // Mode suggestion state
+  const [modeSuggestion, setModeSuggestion] = useState<{
+    mode: TutorMode;
+    show: boolean;
+  } | null>(null);
   
   // Use AbortController for proper cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -124,10 +132,11 @@ function App() {
     localStorage.setItem('ai-tutor-sidebar-folded', JSON.stringify(sidebarFolded)); 
   }, [sidebarFolded]);
 
-  // Close quiz modal when conversation changes
+  // Close quiz modal and mode suggestion when conversation changes
   useEffect(() => {
     setIsQuizModalOpen(false);
     setStudySession(null);
+    setModeSuggestion(null);
   }, [currentConversationId]);
 
   // --- MEMOS ---
@@ -149,7 +158,6 @@ function App() {
   const hasApiKey = !!(settings.googleApiKey || settings.zhipuApiKey || settings.mistralApiKey);
   
   // --- GENERAL HANDLERS ---
-  // MODIFIED: Allow `id` to be `null` to handle the empty welcome screen state
   const handleSelectConversation = (id: string | null) => {
     setActiveView('chat');
     setCurrentConversationId(id);
@@ -213,7 +221,27 @@ function App() {
       };
       setConversations(prev => [conversationToUpdate, ...prev]);
       handleSelectConversation(conversationToUpdate.id);
+
+      // ✨ Smart mode detection on first message of new conversation
+      const detection = detectBestMode(content);
+      if (shouldSuggestMode(detection, settings.selectedTutorMode)) {
+        setModeSuggestion({
+          mode: detection.suggestedMode,
+          show: true
+        });
+      }
     } else {
+      // ✨ Smart mode detection on first message of existing empty conversation
+      if (existingConversation.messages.length === 0) {
+        const detection = detectBestMode(content);
+        if (shouldSuggestMode(detection, settings.selectedTutorMode)) {
+          setModeSuggestion({
+            mode: detection.suggestedMode,
+            show: true
+          });
+        }
+      }
+
       conversationToUpdate = {
         ...existingConversation,
         title: existingConversation.messages.length === 0 
@@ -539,6 +567,19 @@ function App() {
     }
   };
   
+  // --- MODE SUGGESTION HANDLERS ---
+  const handleAcceptModeSuggestion = () => {
+    if (modeSuggestion) {
+      handleModelChange(modeSuggestion.mode as any);
+      setModeSuggestion(null);
+      showNotification(`Switched to ${modeSuggestion.mode} mode!`, 'success');
+    }
+  };
+
+  const handleDismissModeSuggestion = () => {
+    setModeSuggestion(null);
+  };
+  
   // --- OTHER HANDLERS ---
   const handleModelChange = (model: 'google' | 'zhipu' | 'mistral-small' | 'mistral-codestral') => {
     const newSettings = { ...settings, selectedModel: model };
@@ -641,21 +682,34 @@ function App() {
           </button>
         )}
         {activeView === 'chat' ? (
-          <ChatArea
-            conversation={currentConversation}
-            onSendMessage={handleSendMessage}
-            isLoading={isChatLoading}
-            isQuizLoading={isQuizLoading}
-            isFlowchartLoading={isFlowchartLoading}
-            streamingMessage={streamingMessage}
-            hasApiKey={hasApiKey}
-            onStopGenerating={handleStopGenerating}
-            onSaveAsNote={handleSaveAsNote}
-            onGenerateQuiz={handleGenerateQuiz}
-            onGenerateFlowchart={handleGenerateFlowchart}
-            onEditMessage={handleEditMessage}
-            onRegenerateResponse={handleRegenerateResponse}
-          />
+          <>
+            {/* Mode suggestion banner */}
+            {modeSuggestion?.show && (
+              <div className="py-2">
+                <ModeSuggestionBanner
+                  suggestedMode={modeSuggestion.mode}
+                  onAccept={handleAcceptModeSuggestion}
+                  onDismiss={handleDismissModeSuggestion}
+                />
+              </div>
+            )}
+            
+            <ChatArea
+              conversation={currentConversation}
+              onSendMessage={handleSendMessage}
+              isLoading={isChatLoading}
+              isQuizLoading={isQuizLoading}
+              isFlowchartLoading={isFlowchartLoading}
+              streamingMessage={streamingMessage}
+              hasApiKey={hasApiKey}
+              onStopGenerating={handleStopGenerating}
+              onSaveAsNote={handleSaveAsNote}
+              onGenerateQuiz={handleGenerateQuiz}
+              onGenerateFlowchart={handleGenerateFlowchart}
+              onEditMessage={handleEditMessage}
+              onRegenerateResponse={handleRegenerateResponse}
+            />
+          </>
         ) : activeView === 'note' ? (
           <NoteView note={currentNote} />
         ) : (
