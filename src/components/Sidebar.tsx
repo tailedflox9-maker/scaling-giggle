@@ -267,7 +267,7 @@ export function Sidebar({
                 <div
                   key={conversation.id}
                   onClick={() => onSelectConversation(conversation.id)}
-                  className={`group relative flex items-start gap-2 ${isFolded ? 'justify-center p-2.5' : 'p-2'} rounded-lg cursor-pointer transition-colors ${
+                  className={`group relative flex items-center gap-2 ${isFolded ? 'justify-center p-2.5' : 'p-2'} rounded-lg cursor-pointer transition-colors ${
                     activeView === 'chat' && currentConversationId === conversation.id
                       ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
                       : 'hover:bg-[var(--color-card)] text-[var(--color-text-primary)]'
@@ -283,7 +283,7 @@ export function Sidebar({
                     </div>
                   ) : (
                     <>
-                      <div className="relative flex-shrink-0 mt-0.5">
+                      <div className="relative flex-shrink-0">
                         <MessageSquare className="w-4 h-4" />
                         {conversation.isPinned && (
                           <Pin className="w-2.5 h-2.5 absolute -top-1 -right-1 text-yellow-400" />
@@ -302,13 +302,13 @@ export function Sidebar({
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
-                        <div className="flex-1 min-w-0 text-sm font-medium">
+                        <div className="flex-1 min-w-0 text-sm font-medium truncate">
                           {conversation.title}
                         </div>
                       )}
                       
                       <div className="absolute inset-y-0 right-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
-                        <div className="flex items-center pl-8 pr-1.5 h-full bg-gradient-to-l from-[var(--color-card)] via-[var(--color-card)]/95 to-transparent backdrop-blur-[2px]">
+                        <div className="flex items-center pl-8 pr-1.5 h-full bg-gradient-to-l from-[var(--color-card)] to-transparent">
                           <div className="flex gap-0.5 flex-shrink-0">
                             <button
                               onClick={(e) => { e.stopPropagation(); onTogglePinConversation(conversation.id); }}
