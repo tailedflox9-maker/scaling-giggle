@@ -1,3 +1,5 @@
+// src/components/SettingsModal.tsx
+
 import React, { useState } from 'react';
 import { X, Settings, Key, Download, Upload, Shield, Database, Eye, EyeOff, HelpCircle, Trash2, BookUser } from 'lucide-react';
 import { APISettings, TutorMode } from '../types';
@@ -8,7 +10,6 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: APISettings;
   onSaveSettings: (settings: APISettings) => void;
-  onTutorModeChange?: (mode: TutorMode) => void;
 }
 
 const apiInfo = {
@@ -26,7 +27,7 @@ const tutorModes = [
 
 type ActiveTab = 'general' | 'keys' | 'data';
 
-export function SettingsModal({ isOpen, onClose, settings, onSaveSettings, onTutorModeChange }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, settings, onSaveSettings }: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState<APISettings>(settings);
   const [visibleApis, setVisibleApis] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<ActiveTab>('general');
@@ -45,16 +46,7 @@ export function SettingsModal({ isOpen, onClose, settings, onSaveSettings, onTut
   };
   
   const handleTutorModeChange = (modeId: TutorMode) => {
-    const newSettings = {...localSettings, selectedTutorMode: modeId};
-    setLocalSettings(newSettings);
-    
-    // Immediately save and notify parent
-    if (onTutorModeChange) {
-      onTutorModeChange(modeId);
-    }
-    
-    // Also update local storage immediately
-    storageUtils.saveSettings(newSettings);
+    setLocalSettings(prev => ({ ...prev, selectedTutorMode: modeId }));
   };
 
   const handleExportData = () => {
