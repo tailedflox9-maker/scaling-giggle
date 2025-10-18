@@ -570,9 +570,18 @@ function App() {
   // --- MODE SUGGESTION HANDLERS ---
   const handleAcceptModeSuggestion = () => {
     if (modeSuggestion) {
-      handleModelChange(modeSuggestion.mode as any);
+      handleTutorModeChange(modeSuggestion.mode);
       setModeSuggestion(null);
-      showNotification(`Switched to ${modeSuggestion.mode} mode!`, 'success');
+      
+      // Get friendly mode name
+      const modeNames: Record<TutorMode, string> = {
+        standard: 'Standard Tutor',
+        exam: 'Exam Coach',
+        mentor: 'Friendly Mentor',
+        creative: 'Creative Guide'
+      };
+      
+      showNotification(`Switched to ${modeNames[modeSuggestion.mode]} mode!`, 'success');
     }
   };
 
@@ -583,6 +592,12 @@ function App() {
   // --- OTHER HANDLERS ---
   const handleModelChange = (model: 'google' | 'zhipu' | 'mistral-small' | 'mistral-codestral') => {
     const newSettings = { ...settings, selectedModel: model };
+    setSettings(newSettings);
+    storageUtils.saveSettings(newSettings);
+  };
+
+  const handleTutorModeChange = (mode: TutorMode) => {
+    const newSettings = { ...settings, selectedTutorMode: mode };
     setSettings(newSettings);
     storageUtils.saveSettings(newSettings);
   };
@@ -724,7 +739,8 @@ function App() {
         isOpen={settingsOpen} 
         onClose={() => setSettingsOpen(false)} 
         settings={settings} 
-        onSaveSettings={handleSaveSettings} 
+        onSaveSettings={handleSaveSettings}
+        onTutorModeChange={handleTutorModeChange}
       />
       <QuizModal 
         isOpen={isQuizModalOpen} 
