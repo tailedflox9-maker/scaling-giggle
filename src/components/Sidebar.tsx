@@ -1,23 +1,27 @@
 import React, { useState, useMemo } from 'react';
 import {
   Plus, MessageSquare, Settings, Trash2, X, ChevronLeft, ChevronRight,
-  Sparkles, Brain, Cloud, Terminal, Search, Pin, Edit, Book
+  Sparkles, Brain, Cloud, Terminal, Search, Pin, Edit, Book, GitBranch
 } from 'lucide-react';
-import { Conversation, Note } from '../types';
+import { Conversation, Note, Flowchart } from '../types';
 
 interface SidebarProps {
   conversations: Conversation[];
   notes: Note[];
-  activeView: 'chat' | 'note';
+  flowcharts: Flowchart[];
+  activeView: 'chat' | 'note' | 'flowchart';
   currentConversationId: string | null;
   currentNoteId: string | null;
+  currentFlowchartId: string | null;
   onNewConversation: () => void;
   onSelectConversation: (id: string) => void;
   onSelectNote: (id: string | null) => void;
+  onSelectFlowchart: (id: string | null) => void;
   onDeleteConversation: (id: string) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
   onTogglePinConversation: (id: string) => void;
   onDeleteNote: (id: string) => void;
+  onDeleteFlowchart: (id: string) => void;
   onOpenSettings: () => void;
   settings: { selectedModel: string };
   onModelChange: (model: any) => void;
@@ -30,16 +34,20 @@ interface SidebarProps {
 export function Sidebar({
   conversations,
   notes,
+  flowcharts,
   activeView,
   currentConversationId,
   currentNoteId,
+  currentFlowchartId,
   onNewConversation,
   onSelectConversation,
   onSelectNote,
+  onSelectFlowchart,
   onDeleteConversation,
   onRenameConversation,
   onTogglePinConversation,
   onDeleteNote,
+  onDeleteFlowchart,
   onOpenSettings,
   settings,
   onModelChange,
@@ -51,7 +59,7 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
-  const [view, setView] = useState<'chats' | 'notes'>('chats');
+  const [view, setView] = useState<'chats' | 'notes' | 'flowcharts'>('chats');
 
   const models = [
     { id: 'google', icon: Sparkles, name: 'Gemma' },
@@ -75,6 +83,12 @@ export function Sidebar({
       n.content.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [notes, searchQuery]);
+
+  const filteredFlowcharts = useMemo(() => {
+    return flowcharts.filter(f =>
+      f.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [flowcharts, searchQuery]);
 
   const handleStartEditing = (conversation: Conversation) => {
     setEditingId(conversation.id);
@@ -192,6 +206,8 @@ export function Sidebar({
           )}
         </div>
       )}
+
+{/* ... Continued from Part 1 */}
 
       <div className={`flex-1 overflow-y-auto p-2 flex flex-col ${activeView === 'chat' ? 'border-t border-[var(--color-border)] mt-2' : ''}`}>
         {!isFolded && (
@@ -326,10 +342,52 @@ export function Sidebar({
             )}
           </div>
         )}
+
+        {view === 'flowcharts' && !isFolded && (
+          <div className="space-y-1">
+            {filteredFlowcharts.length > 0 ? (
+              filteredFlowcharts.map((flowchart) => (
+                <div
+                  key={flowchart.id}
+                  onClick={() => onSelectFlowchart(flowchart.id)}
+                  className={`group p-2.5 rounded-lg cursor-pointer ${
+                    activeView === 'flowchart' && currentFlowchartId === flowchart.id
+                      ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
+                      : 'hover:bg-[var(--color-card)] text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2 flex-1">
+                      <GitBranch className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1 text-sm font-semibold truncate">{flowchart.title}</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteFlowchart(flowchart.id);
+                      }}
+                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-900/30 text-red-400"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-xs opacity-70 mt-1">
+                    {flowchart.nodes.length} nodes • {flowchart.edges.length} connections
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 px-4">
+                <GitBranch className="w-12 h-12 mx-auto text-[var(--color-text-secondary)] opacity-50 mb-3" />
+                <p className="text-sm text-[var(--color-text-secondary)]">No flowcharts found</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="p-2 border-t border-[var(--color-border)]">
-        <div className={`space-y-1 ${isFolded ? 'flex flex-col' : 'grid grid-cols-2 gap-1'}`}>
+        <div className={`space-y-1 ${isFolded ? 'flex flex-col' : 'grid grid-cols-3 gap-1'}`}>
           <button
             onClick={() => setView('chats')}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg w-full transition-colors ${
@@ -347,6 +405,15 @@ export function Sidebar({
           >
             <Book className="w-5 h-5" />
             {!isFolded && <span className="text-xs font-semibold">Notes</span>}
+          </button>
+          <button
+            onClick={() => { setView('flowcharts'); onSelectFlowchart(null); }}
+            className={`flex flex-col items-center gap-1 p-2 rounded-lg w-full transition-colors ${
+              view === 'flowcharts' ? 'text-[var(--color-text-primary)] bg-[var(--color-card)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+            }`}
+          >
+            <GitBranch className="w-5 h-5" />
+            {!isFolded && <span className="text-xs font-semibold">Flow</span>}
           </button>
         </div>
         {!isFolded && (
