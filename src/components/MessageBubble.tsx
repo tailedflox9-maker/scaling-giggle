@@ -69,7 +69,7 @@ const StreamingIndicator = React.memo(() => (
   </span>
 ));
 
-// Memoized action buttons to prevent unnecessary re-renders
+// Memoized action buttons - now a more compact toolbar
 const ActionButtons = React.memo(({ isUser, onRegenerate, onEdit, onCopy, onSaveNote, onExport, copied, noteSaved }: {
   isUser: boolean;
   onRegenerate?: () => void;
@@ -80,50 +80,48 @@ const ActionButtons = React.memo(({ isUser, onRegenerate, onEdit, onCopy, onSave
   copied: boolean;
   noteSaved: boolean;
 }) => (
-  <div className="absolute -bottom-1 -right-1 flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
-    <div className="flex gap-1 p-1 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-sm">
-      {!isUser && onRegenerate && (
-        <button
-          onClick={onRegenerate}
-          className="interactive-button text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1 rounded hover:bg-[var(--color-border)] touch-target"
-          title={'Regenerate response'}
-        >
-          <RefreshCcw className="w-4 h-4" />
-        </button>
-      )}
-      {!isUser && (
-        <button
-          onClick={onSaveNote}
-          className={`interactive-button transition-colors p-1 rounded hover:bg-[var(--color-border)] touch-target ${noteSaved ? 'text-blue-400' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
-          title={'Save as Note'}
-        >
-          <Bookmark className="w-4 h-4" />
-        </button>
-      )}
+  <div className="flex gap-0.5 p-0.5 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-sm">
+    {!isUser && onRegenerate && (
       <button
-        onClick={onEdit}
-        className="interactive-button text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1 rounded hover:bg-[var(--color-border)] touch-target"
-        title={'Edit message'}
+        onClick={onRegenerate}
+        className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1.5 rounded-md hover:bg-[var(--color-border)]"
+        title={'Regenerate response'}
       >
-        <Edit2 className="w-4 h-4" />
+        <RefreshCcw className="w-3.5 h-3.5" />
       </button>
+    )}
+    {!isUser && (
       <button
-        onClick={onCopy}
-        className="interactive-button text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1 rounded hover:bg-[var(--color-border)] touch-target"
-        title={'Copy message'}
+        onClick={onSaveNote}
+        className={`transition-colors p-1.5 rounded-md hover:bg-[var(--color-border)] ${noteSaved ? 'text-blue-400' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+        title={'Save as Note'}
       >
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        <Bookmark className="w-3.5 h-3.5" />
       </button>
-      {!isUser && (
-        <button
-          onClick={onExport}
-          className="interactive-button text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1 rounded hover:bg-[var(--color-border)] touch-target"
-          title={'Export as Markdown'}
-        >
-          <Download className="w-4 h-4" />
-        </button>
-      )}
-    </div>
+    )}
+    <button
+      onClick={onEdit}
+      className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1.5 rounded-md hover:bg-[var(--color-border)]"
+      title={'Edit message'}
+    >
+      <Edit2 className="w-3.5 h-3.5" />
+    </button>
+    <button
+      onClick={onCopy}
+      className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1.5 rounded-md hover:bg-[var(--color-border)]"
+      title={'Copy message'}
+    >
+      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+    </button>
+    {!isUser && (
+      <button
+        onClick={onExport}
+        className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1.5 rounded-md hover:bg-[var(--color-border)]"
+        title={'Export as Markdown'}
+      >
+        <Download className="w-3.5 h-3.5" />
+      </button>
+    )}
   </div>
 ));
 
@@ -272,21 +270,35 @@ export function MessageBubble({
 
   return (
     <div
-      className={`message-wrapper flex gap-3 sm:gap-4 ${isUser ? 'justify-end' : 'justify-start'} group transition-all duration-200 ease-out will-change-transform`}
+      className={`message-wrapper flex items-center gap-3 ${isUser ? 'justify-end' : 'justify-start'} group transition-all duration-200 ease-out will-change-transform`}
     >
       {!isUser && (
         <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-card)]">
           <Sparkles className="w-4 h-4 text-[var(--color-text-secondary)]" />
         </div>
       )}
-      
-      <div className="message-bubble relative bg-[var(--color-card)] p-3 sm:p-4 rounded-xl min-h-[3rem] flex flex-col">
+
+      {isUser && !isEditing && !isStreaming && message.content.length > 0 && onEditMessage && (
+        <div className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform-gpu group-hover:scale-100 scale-95">
+          <ActionButtons
+            isUser={isUser}
+            onEdit={handleEdit}
+            onCopy={handleCopy}
+            onSaveNote={handleSaveNote}
+            onExport={handleExport}
+            copied={copied}
+            noteSaved={noteSaved}
+          />
+        </div>
+      )}
+
+      <div className="message-bubble bg-[var(--color-card)] p-3 sm:p-4 rounded-xl min-h-[3rem] flex flex-col">
         {!isUser && displayModel && (
           <div className="text-xs text-[var(--color-text-secondary)] mb-2 font-medium tracking-wide">
             {displayModel}
           </div>
         )}
-        
+
         {isEditing ? (
           <div className="space-y-3">
             <textarea
@@ -329,8 +341,10 @@ export function MessageBubble({
             {isStreaming && <StreamingIndicator />}
           </div>
         )}
-        
-        {!isEditing && !isStreaming && message.content.length > 0 && onEditMessage && (
+      </div>
+
+      {!isUser && !isEditing && !isStreaming && message.content.length > 0 && onEditMessage && (
+        <div className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform-gpu group-hover:scale-100 scale-95">
           <ActionButtons
             isUser={isUser}
             onRegenerate={onRegenerateResponse ? handleRegenerate : undefined}
@@ -341,9 +355,9 @@ export function MessageBubble({
             copied={copied}
             noteSaved={noteSaved}
           />
-        )}
-      </div>
-      
+        </div>
+      )}
+
       {isUser && (
         <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[var(--color-card)]">
           <Smile className="w-4 h-4 text-[var(--color-text-secondary)]" />
