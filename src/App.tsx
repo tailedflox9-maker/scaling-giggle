@@ -262,10 +262,6 @@ function App() {
     }
   };
 
-  // Continued in Part 2...
-
-// ... Continued from Part 1
-
   const handleEditMessage = (messageId: string, newContent: string) => {
     setConversations(prev => prev.map(conv => {
       if (conv.id === currentConversationId) {
@@ -427,22 +423,73 @@ function App() {
   };
 
   const handleSaveFlowchart = (flowchart: Flowchart) => {
-    setFlowcharts(prev => prev.map(f => 
-      f.id === flowchart.id ? flowchart : f
-    ));
+    setFlowcharts(prev => {
+      const index = prev.findIndex(f => f.id === flowchart.id);
+      if (index !== -1) {
+        // Update existing flowchart
+        const updated = [...prev];
+        updated[index] = { ...flowchart, updatedAt: new Date() };
+        return updated;
+      } else {
+        // This shouldn't happen, but handle it just in case
+        return [{ ...flowchart, updatedAt: new Date() }, ...prev];
+      }
+    });
   };
 
   const handleExportFlowchart = (flowchart: Flowchart) => {
-    const dataStr = JSON.stringify(flowchart, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
+    // Create a clean, readable export format
+    const exportData = {
+      title: flowchart.title,
+      description: flowchart.description || '',
+      createdAt: flowchart.createdAt,
+      updatedAt: flowchart.updatedAt,
+      stats: {
+        totalNodes: flowchart.nodes.length,
+        totalConnections: flowchart.edges.length,
+        nodeTypes: {
+          start: flowchart.nodes.filter(n => n.type === 'start').length,
+          end: flowchart.nodes.filter(n => n.type === 'end').length,
+          topic: flowchart.nodes.filter(n => n.type === 'topic').length,
+          concept: flowchart.nodes.filter(n => n.type === 'concept').length,
+          decision: flowchart.nodes.filter(n => n.type === 'decision').length,
+          process: flowchart.nodes.filter(n => n.type === 'process').length,
+        }
+      },
+      nodes: flowchart.nodes.map(node => ({
+        id: node.id,
+        type: node.type,
+        label: node.label,
+        description: node.description || '',
+        position: {
+          x: node.position.x,
+          y: node.position.y
+        }
+      })),
+      connections: flowchart.edges.map(edge => ({
+        id: edge.id,
+        from: edge.source,
+        to: edge.target,
+        relationship: edge.label || 'connected to'
+      }))
+    };
+
+    // Convert to formatted JSON
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
+    
+    // Create download link
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${flowchart.title.replace(/\s+/g, '-')}.json`;
+    const fileName = `${flowchart.title.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    alert('Flowchart exported successfully as ' + fileName);
   };
 
   const handleDeleteFlowchart = (id: string) => {
@@ -499,8 +546,6 @@ function App() {
     ), 
     [flowcharts]
   );
-
-// ... Continued from Part 2
 
   return (
     <div className="app-container">
