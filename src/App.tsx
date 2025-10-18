@@ -6,6 +6,7 @@ import { FlowchartView } from './components/FlowchartView';
 import { InstallPrompt } from './components/InstallPrompt';
 import { SettingsModal } from './components/SettingsModal';
 import { QuizModal } from './components/QuizModal';
+import { Notification } from './components/Notification';
 import { Conversation, Message, APISettings, Note, StudySession, Flowchart } from './types';
 import { generateId, generateConversationTitle } from './utils/helpers';
 import { usePWA } from './hooks/usePWA';
@@ -15,6 +16,11 @@ import { aiService } from './services/aiService';
 import { generateFlowchartFromConversation } from './services/flowchartGenerator';
 
 type ActiveView = 'chat' | 'note' | 'flowchart';
+
+interface NotificationState {
+  message: string;
+  type: 'success' | 'error';
+}
 
 function App() {
   // --- STATE INITIALIZATION ---
@@ -36,6 +42,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [studySession, setStudySession] = useState<StudySession | null>(null);
+  const [notification, setNotification] = useState<NotificationState | null>(null);
   
   // Use AbortController for proper cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -162,7 +169,7 @@ function App() {
 
   const handleSendMessage = async (content: string) => {
     if (!hasApiKey) {
-      alert('Please set your API key in the settings first.');
+      setNotification({ message: 'Please set your API key in the settings first.', type: 'error' });
       return;
     }
 
@@ -375,7 +382,7 @@ function App() {
       sourceConversationId: currentConversationId,
     };
     setNotes(prev => [newNote, ...prev]);
-    alert("Note saved!");
+    setNotification({ message: 'Note saved successfully!', type: 'success' });
   };
 
   const handleDeleteNote = (id: string) => {
@@ -397,7 +404,8 @@ function App() {
       setIsQuizModalOpen(true);
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : 'Failed to generate quiz.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate quiz.';
+      setNotification({ message: errorMessage, type: 'error' });
     } finally {
       setIsQuizLoading(false);
     }
@@ -413,10 +421,11 @@ function App() {
       const flowchart = await generateFlowchartFromConversation(conversation);
       setFlowcharts(prev => [flowchart, ...prev]);
       handleSelectFlowchart(flowchart.id);
-      alert('Flowchart generated successfully!');
+      setNotification({ message: 'Flowchart generated successfully!', type: 'success' });
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : 'Failed to generate flowchart.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate flowchart.';
+      setNotification({ message: errorMessage, type: 'error' });
     } finally {
       setIsFlowchartLoading(false);
     }
@@ -489,7 +498,7 @@ function App() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert('Flowchart exported successfully as ' + fileName);
+    setNotification({ message: `Flowchart exported as ${fileName}`, type: 'success' });
   };
 
   const handleDeleteFlowchart = (id: string) => {
@@ -627,6 +636,13 @@ function App() {
       />
       {isInstallable && !isInstalled && ( 
         <InstallPrompt onInstall={handleInstallApp} onDismiss={dismissInstallPrompt} /> 
+      )}
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
       )}
     </div>
   );
