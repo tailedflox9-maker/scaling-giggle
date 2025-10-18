@@ -158,22 +158,20 @@ function App() {
   };
 
   const handleSelectNote = (id: string | null) => {
-    // Only change activeView if we're selecting a note (not clearing)
-    if (id !== null) {
-      setActiveView('note');
-    }
     setCurrentNoteId(id);
+    // Always set activeView to 'note' when this handler is called
+    setActiveView('note');
+    // Clear other selections
     setCurrentConversationId(null);
     setCurrentFlowchartId(null);
     if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
   const handleSelectFlowchart = (id: string | null) => {
-    // Only change activeView if we're selecting a flowchart (not clearing)
-    if (id !== null) {
-      setActiveView('flowchart');
-    }
     setCurrentFlowchartId(id);
+    // Always set activeView to 'flowchart' when this handler is called
+    setActiveView('flowchart');
+    // Clear other selections
     setCurrentNoteId(null);
     setCurrentConversationId(null);
     if (window.innerWidth < 1024) setSidebarOpen(false);
