@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus, MessageSquare, Settings, Trash2, X, ChevronLeft, ChevronRight,
   Sparkles, Brain, Cloud, Terminal, Search, Pin, Edit, Book, GitBranch
@@ -61,6 +61,17 @@ export function Sidebar({
   const [editingTitle, setEditingTitle] = useState('');
   const [view, setView] = useState<'chats' | 'notes' | 'flowcharts'>('chats');
 
+  // Sync view with activeView
+  useEffect(() => {
+    if (activeView === 'chat') {
+      setView('chats');
+    } else if (activeView === 'note') {
+      setView('notes');
+    } else if (activeView === 'flowchart') {
+      setView('flowcharts');
+    }
+  }, [activeView]);
+
   const models = [
     { id: 'google', icon: Sparkles, name: 'Gemma' },
     { id: 'zhipu', icon: Brain, name: 'ZhipuAI' },
@@ -112,14 +123,32 @@ export function Sidebar({
     }
   };
 
+  const handleViewChange = (newView: 'chats' | 'notes' | 'flowcharts') => {
+    setView(newView);
+    setSearchQuery(''); // Clear search when changing views
+    
+    // Update active view in parent
+    if (newView === 'notes') {
+      onSelectNote(null);
+    } else if (newView === 'flowcharts') {
+      onSelectFlowchart(null);
+    }
+  };
+
   const sidebarClasses = `bg-[var(--color-sidebar)] flex flex-col h-full border-r border-[var(--color-border)] sidebar transition-all duration-300 ease-in-out fixed lg:static z-50 ${isSidebarOpen ? 'sidebar-open' : 'hidden lg:flex'} ${isFolded ? 'w-14' : 'w-64'}`;
 
   return (
     <aside className={sidebarClasses}>
+      {/* Header */}
       <div className="p-2 border-b border-[var(--color-border)] flex flex-col gap-2">
         <div className="flex items-center justify-between">
           {!isFolded && (
-            <a href="https://tanmay-kalbande.github.io/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 group px-2">
+            <a 
+              href="https://tanmay-kalbande.github.io/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-2 group px-2"
+            >
               <img src="/white-logo.png" alt="Logo" className="w-7 h-7" />
               <h1 className="text-xl font-bold text-[var(--color-text-primary)] group-hover:text-gray-300 transition-colors">
                 AI Tutor
@@ -130,7 +159,7 @@ export function Sidebar({
             <button
               onClick={onOpenSettings}
               className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
-              title={'Settings'}
+              title="Settings"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -146,7 +175,7 @@ export function Sidebar({
             <button
               onClick={onCloseSidebar}
               className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-card)] rounded-lg transition-colors lg:hidden"
-              title={'Close sidebar'}
+              title="Close sidebar"
             >
               <X className="w-5 h-5" />
             </button>
@@ -161,8 +190,9 @@ export function Sidebar({
         </button>
       </div>
 
-      {activeView === 'chat' && (
-        <div className="p-2">
+      {/* Model Selector - Only show when in chat view */}
+      {view === 'chats' && (
+        <div className="p-2 border-b border-[var(--color-border)]">
           {isFolded ? (
             <div className="space-y-2">
               {models.map(model => (
@@ -207,9 +237,9 @@ export function Sidebar({
         </div>
       )}
 
-{/* ... Continued from Part 1 */}
-
-      <div className={`flex-1 overflow-y-auto p-2 flex flex-col ${activeView === 'chat' ? 'border-t border-[var(--color-border)] mt-2' : ''}`}>
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto p-2 flex flex-col">
+        {/* Search Bar */}
         {!isFolded && (
           <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
@@ -223,6 +253,7 @@ export function Sidebar({
           </div>
         )}
 
+        {/* Chats List */}
         {view === 'chats' && (
           <div className="space-y-1">
             {filteredConversations.length > 0 ? (
@@ -237,7 +268,9 @@ export function Sidebar({
                   }`}
                   title={isFolded ? conversation.title : undefined}
                 >
-                  {conversation.isPinned && <Pin className="w-3 h-3 absolute top-1.5 left-1.5 text-yellow-400" />}
+                  {conversation.isPinned && !isFolded && (
+                    <Pin className="w-3 h-3 absolute top-1.5 left-1.5 text-yellow-400" />
+                  )}
                   <MessageSquare className="w-4 h-4 flex-shrink-0" />
                   {!isFolded && (
                     <>
@@ -302,10 +335,17 @@ export function Sidebar({
                 <MessageSquare className="w-12 h-12 mx-auto text-[var(--color-text-secondary)] opacity-50 mb-3" />
                 <p className="text-sm text-[var(--color-text-secondary)]">No chats found</p>
               </div>
-            ) : null}
+            ) : (
+              <div className="text-center py-8 px-4">
+                <MessageSquare className="w-12 h-12 mx-auto text-[var(--color-text-secondary)] opacity-50 mb-3" />
+                <p className="text-sm text-[var(--color-text-secondary)]">No conversations yet</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-2">Start a new chat to begin!</p>
+              </div>
+            )}
           </div>
         )}
 
+        {/* Notes List */}
         {view === 'notes' && !isFolded && (
           <div className="space-y-1">
             {filteredNotes.length > 0 ? (
@@ -313,36 +353,48 @@ export function Sidebar({
                 <div
                   key={note.id}
                   onClick={() => onSelectNote(note.id)}
-                  className={`group p-2.5 rounded-lg cursor-pointer ${
+                  className={`group p-2.5 rounded-lg cursor-pointer transition-colors ${
                     activeView === 'note' && currentNoteId === note.id
                       ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
                       : 'hover:bg-[var(--color-card)] text-[var(--color-text-primary)]'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <span className="flex-1 text-sm font-semibold truncate pr-2">{note.title}</span>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      <Book className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span className="flex-1 text-sm font-semibold truncate">{note.title}</span>
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onDeleteNote(note.id);
                       }}
-                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-900/30 text-red-400"
+                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-900/30 text-red-400 flex-shrink-0"
+                      title="Delete note"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <p className="text-xs opacity-70 mt-1 line-clamp-2">{note.content}</p>
+                  <p className="text-xs opacity-70 mt-1 line-clamp-2 pl-6">{note.content}</p>
                 </div>
               ))
             ) : (
               <div className="text-center py-8 px-4">
                 <Book className="w-12 h-12 mx-auto text-[var(--color-text-secondary)] opacity-50 mb-3" />
-                <p className="text-sm text-[var(--color-text-secondary)]">No notes found</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {searchQuery ? 'No notes found' : 'No notes yet'}
+                </p>
+                {!searchQuery && (
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-2">
+                    Save messages as notes to keep them!
+                  </p>
+                )}
               </div>
             )}
           </div>
         )}
 
+        {/* Flowcharts List */}
         {view === 'flowcharts' && !isFolded && (
           <div className="space-y-1">
             {filteredFlowcharts.length > 0 ? (
@@ -350,14 +402,14 @@ export function Sidebar({
                 <div
                   key={flowchart.id}
                   onClick={() => onSelectFlowchart(flowchart.id)}
-                  className={`group p-2.5 rounded-lg cursor-pointer ${
+                  className={`group p-2.5 rounded-lg cursor-pointer transition-colors ${
                     activeView === 'flowchart' && currentFlowchartId === flowchart.id
                       ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
                       : 'hover:bg-[var(--color-card)] text-[var(--color-text-primary)]'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       <GitBranch className="w-4 h-4 flex-shrink-0" />
                       <span className="flex-1 text-sm font-semibold truncate">{flowchart.title}</span>
                     </div>
@@ -366,12 +418,13 @@ export function Sidebar({
                         e.stopPropagation();
                         onDeleteFlowchart(flowchart.id);
                       }}
-                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-900/30 text-red-400"
+                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-900/30 text-red-400 flex-shrink-0"
+                      title="Delete flowchart"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <p className="text-xs opacity-70 mt-1">
+                  <p className="text-xs opacity-70 mt-1 pl-6">
                     {flowchart.nodes.length} nodes • {flowchart.edges.length} connections
                   </p>
                 </div>
@@ -379,38 +432,71 @@ export function Sidebar({
             ) : (
               <div className="text-center py-8 px-4">
                 <GitBranch className="w-12 h-12 mx-auto text-[var(--color-text-secondary)] opacity-50 mb-3" />
-                <p className="text-sm text-[var(--color-text-secondary)]">No flowcharts found</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {searchQuery ? 'No flowcharts found' : 'No flowcharts yet'}
+                </p>
+                {!searchQuery && (
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-2">
+                    Generate flowcharts from conversations!
+                  </p>
+                )}
               </div>
             )}
           </div>
         )}
+
+        {/* Folded state message for notes/flowcharts */}
+        {isFolded && (view === 'notes' || view === 'flowcharts') && (
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="text-center">
+              {view === 'notes' ? (
+                <Book className="w-8 h-8 mx-auto text-[var(--color-text-secondary)] opacity-50 mb-2" />
+              ) : (
+                <GitBranch className="w-8 h-8 mx-auto text-[var(--color-text-secondary)] opacity-50 mb-2" />
+              )}
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                Expand sidebar
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Footer Navigation */}
       <div className="p-2 border-t border-[var(--color-border)]">
-        <div className={`space-y-1 ${isFolded ? 'flex flex-col' : 'grid grid-cols-3 gap-1'}`}>
+        <div className={`${isFolded ? 'space-y-1 flex flex-col' : 'grid grid-cols-3 gap-1'}`}>
           <button
-            onClick={() => setView('chats')}
+            onClick={() => handleViewChange('chats')}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg w-full transition-colors ${
-              view === 'chats' ? 'text-[var(--color-text-primary)] bg-[var(--color-card)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+              view === 'chats' 
+                ? 'text-[var(--color-text-primary)] bg-[var(--color-card)]' 
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-card)]'
             }`}
+            title="Chats"
           >
             <MessageSquare className="w-5 h-5" />
             {!isFolded && <span className="text-xs font-semibold">Chats</span>}
           </button>
           <button
-            onClick={() => { setView('notes'); onSelectNote(null); }}
+            onClick={() => handleViewChange('notes')}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg w-full transition-colors ${
-              view === 'notes' ? 'text-[var(--color-text-primary)] bg-[var(--color-card)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+              view === 'notes' 
+                ? 'text-[var(--color-text-primary)] bg-[var(--color-card)]' 
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-card)]'
             }`}
+            title="Notes"
           >
             <Book className="w-5 h-5" />
             {!isFolded && <span className="text-xs font-semibold">Notes</span>}
           </button>
           <button
-            onClick={() => { setView('flowcharts'); onSelectFlowchart(null); }}
+            onClick={() => handleViewChange('flowcharts')}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg w-full transition-colors ${
-              view === 'flowcharts' ? 'text-[var(--color-text-primary)] bg-[var(--color-card)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+              view === 'flowcharts' 
+                ? 'text-[var(--color-text-primary)] bg-[var(--color-card)]' 
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-card)]'
             }`}
+            title="Flowcharts"
           >
             <GitBranch className="w-5 h-5" />
             {!isFolded && <span className="text-xs font-semibold">Flow</span>}
