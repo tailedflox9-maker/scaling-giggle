@@ -61,7 +61,7 @@ export function Sidebar({
   const [editingTitle, setEditingTitle] = useState('');
   const [view, setView] = useState<'chats' | 'notes' | 'flowcharts'>('chats');
 
-  // Sync view with activeView prop
+  // Sync view with activeView prop - this is the KEY FIX
   useEffect(() => {
     if (activeView === 'chat') {
       setView('chats');
@@ -127,25 +127,21 @@ export function Sidebar({
     }
   };
 
+  // FIXED: This now properly triggers the parent to update activeView
   const handleViewChange = (newView: 'chats' | 'notes' | 'flowcharts') => {
     setView(newView);
     setSearchQuery('');
     
     if (newView === 'chats') {
-      // Switch to chat view
       if (currentConversationId) {
-        // If there's already a selected conversation, select it again to trigger chat view
         onSelectConversation(currentConversationId);
       } else if (sortedConversations.length > 0) {
-        // Select the first conversation
         onSelectConversation(sortedConversations[0].id);
       }
     } else if (newView === 'notes') {
-      // Call with null to trigger the view change without selecting a note
-      onSelectNote(null);
+      onSelectNote(currentNoteId || null);
     } else if (newView === 'flowcharts') {
-      // Call with null to trigger the view change without selecting a flowchart
-      onSelectFlowchart(null);
+      onSelectFlowchart(currentFlowchartId || null);
     }
   };
 
