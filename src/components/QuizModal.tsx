@@ -1,6 +1,5 @@
-// src/components/QuizModal.tsx
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Check, XCircle, CheckCircle, Lightbulb } from 'lucide-react';
+import { X, CheckCircle, XCircle, Lightbulb } from 'lucide-react';
 import { StudySession } from '../types';
 
 interface QuizModalProps {
@@ -9,12 +8,19 @@ interface QuizModalProps {
   session: StudySession | null;
 }
 
+const Confetti = () => (
+  <div className="confetti-container">
+    {[...Array(10)].map((_, i) => <div key={i} className="confetti-piece" />)}
+  </div>
+);
+
 export function QuizModal({ isOpen, onClose, session }: QuizModalProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [completionAnimation, setCompletionAnimation] = useState('');
   const currentQuestion = session?.questions[currentQuestionIndex];
 
   // Reset state when a new session is passed or the modal is closed
@@ -25,6 +31,7 @@ export function QuizModal({ isOpen, onClose, session }: QuizModalProps) {
       setUserAnswers({});
       setShowFeedback(false);
       setQuizCompleted(false);
+      setCompletionAnimation('');
     }
   }, [isOpen, session]);
 
@@ -55,8 +62,21 @@ export function QuizModal({ isOpen, onClose, session }: QuizModalProps) {
 
   const scorePercentage = useMemo(() => {
     if (!session || session.questions.length === 0) return 0;
-    return (score / session.questions.length) * 100;
+    return Math.round((score / session.questions.length) * 100);
   }, [score, session]);
+  
+  // Set animation class when quiz is completed
+  useEffect(() => {
+    if (quizCompleted) {
+      if (scorePercentage >= 75) {
+        setCompletionAnimation('animate-pop-in');
+      } else if (scorePercentage >= 50) {
+        setCompletionAnimation('animate-pop-in');
+      } else {
+        setCompletionAnimation('animate-fadeIn');
+      }
+    }
+  }, [quizCompleted, scorePercentage]);
 
   const getScoreFeedback = useMemo(() => {
     if (scorePercentage === 100) return "Perfect Score! You're a master!";
@@ -128,15 +148,17 @@ export function QuizModal({ isOpen, onClose, session }: QuizModalProps) {
   };
 
   const renderCompletedContent = () => (
-    <div className="text-center flex flex-col items-center justify-center h-full p-4 sm:p-8 animate-fadeIn">
+    <div className={`text-center flex flex-col items-center justify-center h-full p-4 sm:p-8 ${completionAnimation}`}>
+      {scorePercentage >= 75 && <Confetti />}
       <CheckCircle className="w-16 h-16 text-green-400 mb-4" />
       <h3 className="text-2xl font-bold mb-2">
         Quiz Completed!
       </h3>
       <p className="text-base text-[var(--color-text-secondary)] mb-6">{getScoreFeedback}</p>
-      <p className="text-6xl font-bold text-[var(--color-accent-bg)] mb-2">
-        {score} <span className="text-3xl text-[var(--color-text-secondary)]">/ {session.questions.length}</span>
+      <p className={`text-5xl sm:text-6xl font-bold text-[var(--color-accent-bg)] mb-2 ${scorePercentage === 100 ? 'animate-glowing-text' : ''}`}>
+        {score} <span className="text-2xl sm:text-3xl text-[var(--color-text-secondary)]">/ {session.questions.length}</span>
       </p>
+      <p className="font-semibold text-lg">{scorePercentage}%</p>
     </div>
   );
 
