@@ -1,0 +1,410 @@
+// src/components/FlowchartCanvas.tsx
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Plus, Minus, Move, MousePointer, Hand, Trash2, Edit2, Save, Download, Maximize2 } from 'lucide-react';
+import { FlowchartNode, FlowchartEdge, NodeType, FlowchartViewport } from '../types/flowchart';
+
+interface FlowchartCanvasProps {
+  nodes: FlowchartNode[];
+  edges: FlowchartEdge[];
+  onNodesChange: (nodes: FlowchartNode[]) => void;
+  onEdgesChange: (edges: FlowchartEdge[]) => void;
+  readOnly?: boolean;
+  title?: string;
+  onSave?: () => void;
+  onExport?: () => void;
+}
+
+const nodeTypeStyles: Record<NodeType, { bg: string; border: string; shape: string }> = {
+  start: { bg: '#22c55e', border: '#16a34a', shape: 'rounded-full' },
+  end: { bg: '#ef4444', border: '#dc2626', shape: 'rounded-full' },
+  process: { bg: '#3b82f6', border: '#2563eb', shape: 'rounded-lg' },
+  decision: { bg: '#f59e0b', border: '#d97706', shape: 'diamond' },
+  topic: { bg: '#8b5cf6', border: '#7c3aed', shape: 'rounded-lg' },
+  concept: { bg: '#06b6d4', border: '#0891b2', shape: 'rounded-lg' },
+};
+
+export function FlowchartCanvas({
+  nodes,
+  edges,
+  onNodesChange,
+  onEdgesChange,
+  readOnly = false,
+  title,
+  onSave,
+  onExport,
+}: FlowchartCanvasProps) {
+  const [viewport, setViewport] = useState<FlowchartViewport>({ x: 0, y: 0, zoom: 1 });
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const [isPanning, setIsPanning] = useState(false);
+  const [tool, setTool] = useState<'select' | 'pan'>('select');
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+  const [editingLabel, setEditingLabel] = useState('');
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setViewport(prev => ({
+      ...prev,
+      zoom: Math.max(0.1, Math.min(3, prev.zoom * delta)),
+    }));
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.addEventListener('wheel', handleWheel, { passive: false });
+      return () => canvas.removeEventListener('wheel', handleWheel);
+    }
+  }, [handleWheel]);
+
+  const screenToCanvas = useCallback((screenX: number, screenY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (screenX - rect.left - viewport.x) / viewport.zoom,
+      y: (screenY - rect.top - viewport.y) / viewport.zoom,
+    };
+  }, [viewport]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (readOnly) return;
+    
+    const canvas = e.currentTarget as HTMLElement;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setDragStart({ x, y });
+    
+    if (tool === 'pan' || e.button === 1) {
+      setIsPanning(true);
+    }
+  }, [readOnly, tool]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragStart) return;
+
+    const canvas = e.currentTarget as HTMLElement;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const dx = x - dragStart.x;
+    const dy = y - dragStart.y;
+
+    if (isPanning) {
+      setViewport(prev => ({
+        ...prev,
+        x: prev.x + dx,
+        y: prev.y + dy,
+      }));
+      setDragStart({ x, y });
+    } else if (draggingNodeId) {
+      const node = nodes.find(n => n.id === draggingNodeId);
+      if (node) {
+        const canvasPos = screenToCanvas(e.clientX, e.clientY);
+        onNodesChange(
+          nodes.map(n =>
+            n.id === draggingNodeId
+              ? { ...n, position: { x: canvasPos.x, y: canvasPos.y } }
+              : n
+          )
+        );
+      }
+    }
+  }, [dragStart, isPanning, draggingNodeId, nodes, onNodesChange, screenToCanvas]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false);
+    setDraggingNodeId(null);
+    setDragStart(null);
+  }, []);
+
+  const handleNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
+    if (readOnly || tool === 'pan') return;
+    e.stopPropagation();
+    setSelectedNodeId(nodeId);
+    setDraggingNodeId(nodeId);
+  }, [readOnly, tool]);
+
+  const handleNodeDoubleClick = useCallback((node: FlowchartNode) => {
+    if (readOnly) return;
+    setEditingNodeId(node.id);
+    setEditingLabel(node.label);
+  }, [readOnly]);
+
+  const handleDeleteNode = useCallback(() => {
+    if (!selectedNodeId || readOnly) return;
+    onNodesChange(nodes.filter(n => n.id !== selectedNodeId));
+    onEdgesChange(edges.filter(e => e.source !== selectedNodeId && e.target !== selectedNodeId));
+    setSelectedNodeId(null);
+  }, [selectedNodeId, readOnly, nodes, edges, onNodesChange, onEdgesChange]);
+
+  const handleSaveEdit = useCallback(() => {
+    if (!editingNodeId) return;
+    onNodesChange(
+      nodes.map(n =>
+        n.id === editingNodeId ? { ...n, label: editingLabel } : n
+      )
+    );
+    setEditingNodeId(null);
+    setEditingLabel('');
+  }, [editingNodeId, editingLabel, nodes, onNodesChange]);
+
+  const zoomIn = () => setViewport(prev => ({ ...prev, zoom: Math.min(3, prev.zoom * 1.2) }));
+  const zoomOut = () => setViewport(prev => ({ ...prev, zoom: Math.max(0.1, prev.zoom / 1.2) }));
+  const resetView = () => setViewport({ x: 0, y: 0, zoom: 1 });
+
+  const renderNode = (node: FlowchartNode) => {
+    const style = nodeTypeStyles[node.type];
+    const isSelected = selectedNodeId === node.id;
+    const isEditing = editingNodeId === node.id;
+    
+    const x = node.position.x * viewport.zoom + viewport.x;
+    const y = node.position.y * viewport.zoom + viewport.y;
+
+    return (
+      <div
+        key={node.id}
+        className={`absolute cursor-move transition-all duration-200 ${isSelected ? 'ring-4 ring-white/50 scale-105' : ''}`}
+        style={{
+          left: x,
+          top: y,
+          transform: 'translate(-50%, -50%)',
+          minWidth: '120px',
+          maxWidth: '200px',
+        }}
+        onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+        onDoubleClick={() => handleNodeDoubleClick(node)}
+      >
+        <div
+          className={`px-4 py-3 text-white font-semibold text-center shadow-lg backdrop-blur-sm ${
+            node.type === 'decision' ? 'transform rotate-45' : style.shape
+          }`}
+          style={{
+            backgroundColor: style.bg,
+            borderWidth: '2px',
+            borderColor: style.border,
+          }}
+        >
+          <div className={node.type === 'decision' ? 'transform -rotate-45' : ''}>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editingLabel}
+                onChange={(e) => setEditingLabel(e.target.value)}
+                onBlur={handleSaveEdit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveEdit();
+                  if (e.key === 'Escape') {
+                    setEditingNodeId(null);
+                    setEditingLabel('');
+                  }
+                }}
+                className="w-full bg-white/20 text-white text-center border-none outline-none rounded px-2 py-1"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span className="text-sm">{node.label}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEdge = (edge: FlowchartEdge) => {
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const targetNode = nodes.find(n => n.id === edge.target);
+    
+    if (!sourceNode || !targetNode) return null;
+
+    const x1 = sourceNode.position.x * viewport.zoom + viewport.x;
+    const y1 = sourceNode.position.y * viewport.zoom + viewport.y;
+    const x2 = targetNode.position.x * viewport.zoom + viewport.x;
+    const y2 = targetNode.position.y * viewport.zoom + viewport.y;
+
+    return (
+      <g key={edge.id}>
+        <defs>
+          <marker
+            id={`arrowhead-${edge.id}`}
+            markerWidth="10"
+            markerHeight="10"
+            refX="9"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 10 3, 0 6" fill="#9ca3af" />
+          </marker>
+        </defs>
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke="#9ca3af"
+          strokeWidth="2"
+          markerEnd={`url(#arrowhead-${edge.id})`}
+          className={edge.style?.animated ? 'animate-pulse' : ''}
+        />
+        {edge.label && (
+          <text
+            x={(x1 + x2) / 2}
+            y={(y1 + y2) / 2}
+            fill="#d1d5db"
+            fontSize="12"
+            textAnchor="middle"
+            className="pointer-events-none"
+          >
+            {edge.label}
+          </text>
+        )}
+      </g>
+    );
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[var(--color-bg)]">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between p-3 bg-[var(--color-sidebar)] border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold">{title || 'Flowchart'}</h2>
+          <span className="text-xs text-[var(--color-text-secondary)] px-2 py-1 bg-[var(--color-card)] rounded">
+            {nodes.length} nodes
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {!readOnly && (
+            <>
+              <button
+                onClick={() => setTool('select')}
+                className={`p-2 rounded-lg transition-colors ${
+                  tool === 'select'
+                    ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)]'
+                }`}
+                title="Select Tool"
+              >
+                <MousePointer className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setTool('pan')}
+                className={`p-2 rounded-lg transition-colors ${
+                  tool === 'pan'
+                    ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)]'
+                }`}
+                title="Pan Tool"
+              >
+                <Hand className="w-4 h-4" />
+              </button>
+              <div className="w-px h-6 bg-[var(--color-border)]" />
+            </>
+          )}
+          
+          <button
+            onClick={zoomOut}
+            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+            title="Zoom Out"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <span className="text-sm text-[var(--color-text-secondary)] min-w-[4rem] text-center">
+            {Math.round(viewport.zoom * 100)}%
+          </span>
+          <button
+            onClick={zoomIn}
+            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+            title="Zoom In"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          <button
+            onClick={resetView}
+            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+            title="Reset View"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+          
+          {!readOnly && (
+            <>
+              <div className="w-px h-6 bg-[var(--color-border)]" />
+              {selectedNodeId && (
+                <button
+                  onClick={handleDeleteNode}
+                  className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
+                  title="Delete Node"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+              {onSave && (
+                <button
+                  onClick={onSave}
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--color-accent-bg)] text-[var(--color-accent-text)] rounded-lg hover:bg-[var(--color-accent-bg-hover)] transition-colors font-semibold"
+                >
+                  <Save className="w-4 h-4" />
+                  Save
+                </button>
+              )}
+            </>
+          )}
+          
+          {onExport && (
+            <button
+              onClick={onExport}
+              className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+              title="Export"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Canvas */}
+      <div
+        ref={canvasRef}
+        className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        {/* Grid background */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(var(--color-border) 1px, transparent 1px),
+              linear-gradient(90deg, var(--color-border) 1px, transparent 1px)
+            `,
+            backgroundSize: `${20 * viewport.zoom}px ${20 * viewport.zoom}px`,
+            backgroundPosition: `${viewport.x}px ${viewport.y}px`,
+          }}
+        />
+
+        {/* SVG for edges */}
+        <svg
+          ref={svgRef}
+          className="absolute inset-0 pointer-events-none"
+          style={{ width: '100%', height: '100%' }}
+        >
+          {edges.map(renderEdge)}
+        </svg>
+
+        {/* Nodes */}
+        {nodes.map(renderNode)}
+      </div>
+    </div>
+  );
+}
