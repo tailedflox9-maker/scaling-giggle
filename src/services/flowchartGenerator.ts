@@ -1,4 +1,4 @@
-// src/services/flowchartGenerator.ts
+// src/services/flowchartGenerator.ts - REFINED VERSION
 import { Conversation } from '../types';
 import { Flowchart, FlowchartNode, FlowchartEdge, NodeType } from '../types/flowchart';
 import { generateId } from '../utils/helpers';
@@ -21,31 +21,41 @@ ${conversationText}
 YOUR TASK:
 Create a comprehensive learning flowchart that captures the educational journey in this conversation. The flowchart should be:
 1. **Hierarchical**: Main topic → Major concepts → Sub-concepts → Details
-2. **Logical**: Follow the natural learning progression
-3. **Visual**: Well-spaced nodes that are easy to read
-4. **Connected**: Clear relationships between concepts
+2. **Logical**: Follow the natural learning progression TOP to BOTTOM
+3. **Visual**: Well-spaced nodes with VERTICAL flow (y-axis increases significantly between levels)
+4. **Connected**: Clear relationships between concepts (NO backward connections)
+
+CRITICAL LAYOUT RULES:
+- **Vertical spacing**: Minimum 120px between vertical levels (y-axis)
+- **Horizontal spacing**: Minimum 180px between horizontal nodes (x-axis)
+- **Flow direction**: ALWAYS top-to-bottom (increasing y values)
+- **Center alignment**: Keep main flow centered around x=450
+- **Branch distribution**: Spread parallel concepts horizontally
+
+NODE POSITIONING STRATEGY:
+Level 1 (Start):     y: 80
+Level 2 (Topics):    y: 220  (+140)
+Level 3 (Concepts):  y: 360  (+140)
+Level 4 (Details):   y: 500  (+140)
+Level 5 (End):       y: 640  (+140)
+
+Horizontal spread: Center ± 200px for branches
 
 FLOWCHART DESIGN PRINCIPLES:
-- Use "start" node for the main topic/question
-- Use "topic" nodes for major subject areas (2-5 nodes)
-- Use "concept" nodes for specific concepts and explanations (5-15 nodes)
-- Use "decision" nodes ONLY for conditional logic, choices, or comparisons
-- Use "end" node for conclusions or summary
+- Use "start" node for the main topic/question (1 only)
+- Use "topic" nodes for major subject areas (2-4 nodes)
+- Use "concept" nodes for specific concepts and explanations (5-12 nodes)
+- Use "decision" nodes ONLY for actual conditional logic or comparisons (0-2 nodes)
+- Use "end" node for conclusions or summary (1 only)
 - Keep labels concise (15-30 characters max)
-- Distribute nodes across canvas (x: 100-900, y: 50-700)
-- Create vertical flow from top to bottom
-- Add horizontal spacing for parallel concepts
+- NO backward edges (from child to parent)
 
-NODE POSITIONING GUIDELINES:
-- Start node: Top center (x: 400-500, y: 50-100)
-- Major topics: Spread horizontally in second tier (y: 150-200)
-- Concepts: Under their parent topics (y: 300-500)
-- Decisions: Where choices exist (diamond shape in UI)
-- End node: Bottom center (x: 400-500, y: 600-700)
-
-EDGE LABELS:
-- Add labels to edges when the relationship isn't obvious
-- Use phrases like: "explains", "leads to", "results in", "requires", "if yes/no"
+EDGE RULES:
+- Direction: ALWAYS from parent to child (top to bottom)
+- Labels: Use only when relationship isn't obvious
+- Keep labels short: "leads to", "produces", "requires"
+- NO circular connections
+- NO edges from lower nodes to higher nodes
 
 OUTPUT FORMAT:
 Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
@@ -56,10 +66,40 @@ Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
   "nodes": [
     {
       "id": "node-1",
-      "type": "start|topic|concept|decision|end",
-      "label": "Brief clear label",
-      "description": "Optional: fuller explanation",
-      "position": { "x": 400, "y": 50 }
+      "type": "start",
+      "label": "Main Topic",
+      "description": "Brief explanation",
+      "position": { "x": 450, "y": 80 }
+    },
+    {
+      "id": "node-2",
+      "type": "topic",
+      "label": "First Major Concept",
+      "position": { "x": 300, "y": 220 }
+    },
+    {
+      "id": "node-3",
+      "type": "topic",
+      "label": "Second Major Concept",
+      "position": { "x": 600, "y": 220 }
+    },
+    {
+      "id": "node-4",
+      "type": "concept",
+      "label": "Detail A",
+      "position": { "x": 300, "y": 360 }
+    },
+    {
+      "id": "node-5",
+      "type": "concept",
+      "label": "Detail B",
+      "position": { "x": 600, "y": 360 }
+    },
+    {
+      "id": "node-6",
+      "type": "end",
+      "label": "Summary",
+      "position": { "x": 450, "y": 640 }
     }
   ],
   "edges": [
@@ -67,7 +107,33 @@ Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
       "id": "edge-1",
       "source": "node-1",
       "target": "node-2",
-      "label": "relationship description (optional)"
+      "label": "explores"
+    },
+    {
+      "id": "edge-2",
+      "source": "node-1",
+      "target": "node-3"
+    },
+    {
+      "id": "edge-3",
+      "source": "node-2",
+      "target": "node-4",
+      "label": "details"
+    },
+    {
+      "id": "edge-4",
+      "source": "node-3",
+      "target": "node-5"
+    },
+    {
+      "id": "edge-5",
+      "source": "node-4",
+      "target": "node-6"
+    },
+    {
+      "id": "edge-6",
+      "source": "node-5",
+      "target": "node-6"
     }
   ]
 }
@@ -75,11 +141,13 @@ Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
 QUALITY CHECKLIST:
 ✓ All nodes have unique IDs
 ✓ All edges reference valid source/target node IDs
-✓ Labels are concise and clear
-✓ Positions create a readable layout
-✓ Flow is logical and educational
-✓ 8-20 nodes total (not too sparse, not too crowded)
+✓ Labels are concise (15-30 chars)
+✓ Vertical spacing >= 120px between levels
+✓ Horizontal spacing >= 180px between siblings
+✓ Flow is strictly top-to-bottom (no backward edges)
+✓ 8-15 nodes total
 ✓ Valid JSON syntax
+✓ NO edges from lower y to higher y
 
 Generate the flowchart now:`;
 }
@@ -112,7 +180,7 @@ function analyzeConversation(conversation: Conversation): AnalyzedContent {
   };
 }
 
-// Create fallback flowchart with better structure
+// Create fallback flowchart with improved vertical layout
 function createFallbackFlowchart(
   conversation: Conversation,
   analyzed: AnalyzedContent
@@ -130,21 +198,24 @@ function createFallbackFlowchart(
   });
   
   let prevId = startId;
-  let currentY = 200;
+  let currentY = 220;
   
-  // Create nodes for key messages
+  // Create nodes for key messages with proper vertical spacing
   const keyMessages = conversation.messages.slice(0, 8);
   
   keyMessages.forEach((msg, index) => {
     const nodeId = generateId();
     const isUserMsg = msg.role === 'user';
     
+    // Alternate horizontal position for visual variety
+    const xOffset = index % 2 === 0 ? -150 : 150;
+    
     nodes.push({
       id: nodeId,
       type: isUserMsg ? 'topic' : 'concept',
       label: msg.content.slice(0, 25) + (msg.content.length > 25 ? '...' : ''),
       position: {
-        x: 450 + (index % 2 === 0 ? -150 : 150),
+        x: 450 + xOffset,
         y: currentY
       },
     });
@@ -157,7 +228,7 @@ function createFallbackFlowchart(
     });
     
     prevId = nodeId;
-    currentY += 100;
+    currentY += 140; // Proper vertical spacing
   });
   
   // End node
@@ -213,33 +284,53 @@ function validateAndFixFlowchart(data: any, conversation: Conversation): Flowcha
     data.nodes[data.nodes.length - 1].type = 'end';
   }
   
-  // Validate and process nodes
+  // Validate and process nodes with improved positioning
   const nodes: FlowchartNode[] = data.nodes.map((node: any, index: number) => {
     const validTypes: NodeType[] = ['start', 'process', 'decision', 'end', 'topic', 'concept'];
     const type = validTypes.includes(node.type) ? node.type : 'concept';
+    
+    // Fix positioning if too close or invalid
+    let x = node.position?.x ?? 450;
+    let y = node.position?.y ?? (80 + index * 140);
+    
+    // Ensure minimum spacing
+    x = Math.max(100, Math.min(800, x));
+    y = Math.max(50, Math.min(800, y));
     
     return {
       id: node.id || generateId(),
       type,
       label: (node.label || `Node ${index + 1}`).slice(0, 40),
       description: node.description,
-      position: {
-        x: Math.max(50, Math.min(900, node.position?.x ?? 400)),
-        y: Math.max(50, Math.min(700, node.position?.y ?? 100 + index * 80)),
-      },
+      position: { x, y },
     };
   });
   
-  // Validate edges
+  // Sort nodes by y-position to establish flow order
+  const sortedNodes = [...nodes].sort((a, b) => a.position.y - b.position.y);
+  
+  // Validate edges - remove backward edges
   const nodeIds = new Set(nodes.map(n => n.id));
+  const nodeYMap = new Map(nodes.map(n => [n.id, n.position.y]));
+  
   const edges: FlowchartEdge[] = data.edges
-    .filter((edge: any) => 
-      edge.source && 
-      edge.target && 
-      nodeIds.has(edge.source) && 
-      nodeIds.has(edge.target) &&
-      edge.source !== edge.target // No self-loops
-    )
+    .filter((edge: any) => {
+      // Must have valid source and target
+      if (!edge.source || !edge.target || !nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
+        return false;
+      }
+      
+      // No self-loops
+      if (edge.source === edge.target) {
+        return false;
+      }
+      
+      // Only allow forward edges (source.y < target.y or same level)
+      const sourceY = nodeYMap.get(edge.source) || 0;
+      const targetY = nodeYMap.get(edge.target) || 0;
+      
+      return targetY >= sourceY; // Allow forward or horizontal, no backward
+    })
     .map((edge: any) => ({
       id: edge.id || generateId(),
       source: edge.source,
@@ -249,11 +340,11 @@ function validateAndFixFlowchart(data: any, conversation: Conversation): Flowcha
   
   // Ensure connectivity - add missing edges if needed
   if (edges.length === 0 && nodes.length > 1) {
-    for (let i = 0; i < nodes.length - 1; i++) {
+    for (let i = 0; i < sortedNodes.length - 1; i++) {
       edges.push({
         id: generateId(),
-        source: nodes[i].id,
-        target: nodes[i + 1].id,
+        source: sortedNodes[i].id,
+        target: sortedNodes[i + 1].id,
       });
     }
   }
