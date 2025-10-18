@@ -37,25 +37,34 @@ Level 1 (Start):     y: 80
 Level 2 (Topics):    y: 220  (+140)
 Level 3 (Concepts):  y: 360  (+140)
 Level 4 (Details):   y: 500  (+140)
-Level 5 (End):       y: 640  (+140)
+Level 5 (Sub-details): y: 640 (+140)
+Level 6 (End):       y: 780  (+140)
 
-Horizontal spread: Center ± 200px for branches
+Horizontal spread: 
+- 2 branches: Center ± 200px (x: 250, 650)
+- 3 branches: x: 200, 450, 700
+- 4 branches: x: 150, 350, 550, 750
+
+IMPORTANT: End node should ALWAYS be at bottom with at least 100px gap from last concept
 
 FLOWCHART DESIGN PRINCIPLES:
 - Use "start" node for the main topic/question (1 only)
 - Use "topic" nodes for major subject areas (2-4 nodes)
 - Use "concept" nodes for specific concepts and explanations (5-12 nodes)
 - Use "decision" nodes ONLY for actual conditional logic or comparisons (0-2 nodes)
-- Use "end" node for conclusions or summary (1 only)
+- Use "end" node for conclusions or summary (1 only, ALWAYS at bottom with largest y value)
 - Keep labels concise (15-30 characters max)
+- ALWAYS include descriptions for ALL nodes (never leave empty)
 - NO backward edges (from child to parent)
 
 EDGE RULES:
 - Direction: ALWAYS from parent to child (top to bottom)
-- Labels: Use only when relationship isn't obvious
-- Keep labels short: "leads to", "produces", "requires"
+- Labels: Use descriptive verbs ("explains", "leads to", "produces", "requires", "branches into")
+- AVOID generic labels like "connected to" - be specific about the relationship
+- Keep labels short: 2-3 words maximum
 - NO circular connections
 - NO edges from lower nodes to higher nodes
+- Branches should converge at end node when appropriate
 
 OUTPUT FORMAT:
 Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
@@ -93,13 +102,15 @@ Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
       "id": "node-5",
       "type": "concept",
       "label": "Detail B",
+      "description": "Brief explanation of this detail",
       "position": { "x": 600, "y": 360 }
     },
     {
       "id": "node-6",
       "type": "end",
       "label": "Summary",
-      "position": { "x": 450, "y": 640 }
+      "description": "Final takeaway or conclusion",
+      "position": { "x": 450, "y": 540 }
     }
   ],
   "edges": [
@@ -112,7 +123,8 @@ Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
     {
       "id": "edge-2",
       "source": "node-1",
-      "target": "node-3"
+      "target": "node-3",
+      "label": "branches into"
     },
     {
       "id": "edge-3",
@@ -123,28 +135,35 @@ Return ONLY a valid JSON object (no markdown, no code blocks, no extra text):
     {
       "id": "edge-4",
       "source": "node-3",
-      "target": "node-5"
+      "target": "node-5",
+      "label": "details"
     },
     {
       "id": "edge-5",
       "source": "node-4",
-      "target": "node-6"
+      "target": "node-6",
+      "label": "concludes"
     },
     {
       "id": "edge-6",
       "source": "node-5",
-      "target": "node-6"
+      "target": "node-6",
+      "label": "leads to"
     }
   ]
 }
 
 QUALITY CHECKLIST:
 ✓ All nodes have unique IDs
+✓ All nodes have non-empty descriptions
+✓ All edges have descriptive labels (avoid "connected to")
 ✓ All edges reference valid source/target node IDs
 ✓ Labels are concise (15-30 chars)
-✓ Vertical spacing >= 120px between levels
-✓ Horizontal spacing >= 180px between siblings
+✓ Vertical spacing >= 140px between levels
+✓ Horizontal spacing >= 200px between siblings
+✓ End node has highest y value (at bottom)
 ✓ Flow is strictly top-to-bottom (no backward edges)
+✓ Branches converge properly at end
 ✓ 8-15 nodes total
 ✓ Valid JSON syntax
 ✓ NO edges from lower y to higher y
@@ -295,13 +314,16 @@ function validateAndFixFlowchart(data: any, conversation: Conversation): Flowcha
     
     // Ensure minimum spacing
     x = Math.max(100, Math.min(800, x));
-    y = Math.max(50, Math.min(800, y));
+    y = Math.max(50, Math.min(900, y));
+    
+    // Add default description if missing
+    const description = node.description || `Details about ${node.label}`;
     
     return {
       id: node.id || generateId(),
       type,
       label: (node.label || `Node ${index + 1}`).slice(0, 40),
-      description: node.description,
+      description,
       position: { x, y },
     };
   });
@@ -331,12 +353,20 @@ function validateAndFixFlowchart(data: any, conversation: Conversation): Flowcha
       
       return targetY >= sourceY; // Allow forward or horizontal, no backward
     })
-    .map((edge: any) => ({
-      id: edge.id || generateId(),
-      source: edge.source,
-      target: edge.target,
-      label: edge.label ? edge.label.slice(0, 30) : undefined,
-    }));
+    .map((edge: any) => {
+      // Replace generic "connected to" with better labels
+      let label = edge.label || edge.relationship;
+      if (label === 'connected to' || !label) {
+        label = undefined; // Let UI show arrow without label
+      }
+      
+      return {
+        id: edge.id || generateId(),
+        source: edge.source,
+        target: edge.target,
+        label: label ? label.slice(0, 30) : undefined,
+      };
+    });
   
   // Ensure connectivity - add missing edges if needed
   if (edges.length === 0 && nodes.length > 1) {
