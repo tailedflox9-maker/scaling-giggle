@@ -1,3 +1,4 @@
+// src/components/QuizModal.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { X, Check, XCircle, CheckCircle, Lightbulb } from 'lucide-react';
 import { StudySession } from '../types';
@@ -46,7 +47,7 @@ export function QuizModal({ isOpen, onClose, session }: QuizModalProps) {
 
   const score = useMemo(() => {
     if (!session) return 0;
-    return session.questions.reduce((acc, question, index) => {
+    return session.questions.reduce((acc, question) => {
       const correctAnswer = question.options[question.correctAnswer];
       return userAnswers[question.id] === correctAnswer ? acc + 1 : acc;
     }, 0);
