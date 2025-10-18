@@ -559,4 +559,54 @@
       break-inside: avoid;
     }
   }
+
+  /* --- Quiz Modal Animations --- */
+  @keyframes pop-in {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes glowing-text {
+    0%, 100% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #3b82f6, 0 0 20px #3b82f6; }
+    50% { text-shadow: 0 0 10px #fff, 0 0 20px #3b82f6, 0 0 30px #3b82f6, 0 0 40px #3b82f6; }
+  }
+
+  @keyframes confetti-fall {
+    0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  .animate-pop-in {
+    animation: pop-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+  .animate-glowing-text {
+    animation: glowing-text 2.5s ease-in-out infinite;
+  }
+  .confetti-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 16px;
+    background: #3b82f6;
+    top: -50px;
+    opacity: 0;
+    animation: confetti-fall 5s linear infinite;
+  }
+  .confetti-piece:nth-child(2) { background: #10b981; animation-delay: 0.3s; left: 10%; }
+  .confetti-piece:nth-child(3) { background: #ef4444; animation-delay: 0.6s; left: 20%; animation-duration: 4s; }
+  .confetti-piece:nth-child(4) { background: #f59e0b; animation-delay: 0.9s; left: 30%; }
+  .confetti-piece:nth-child(5) { background: #8b5cf6; animation-delay: 1.2s; left: 40%; animation-duration: 6s; }
+  .confetti-piece:nth-child(6) { background: #ec4899; animation-delay: 1.5s; left: 50%; }
+  .confetti-piece:nth-child(7) { background: #14b8a6; animation-delay: 1.8s; left: 60%; animation-duration: 4.5s; }
+  .confetti-piece:nth-child(8) { background: #d946ef; animation-delay: 2.1s; left: 70%; }
+  .confetti-piece:nth-child(9) { background: #6366f1; animation-delay: 2.4s; left: 80%; animation-duration: 5.5s; }
+  .confetti-piece:nth-child(10) { background: #f43f5e; animation-delay: 2.7s; left: 90%; }
 }
