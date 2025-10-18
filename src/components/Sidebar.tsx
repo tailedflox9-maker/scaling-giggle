@@ -153,10 +153,10 @@ export function Sidebar({
               href="https://tanmay-kalbande.github.io/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="flex items-center gap-2 group px-2"
+              className="flex items-center gap-2.5 group px-2"
             >
-              <img src="/white-logo.png" alt="Logo" className="w-7 h-7" />
-              <h1 className="text-xl font-bold text-[var(--color-text-primary)] group-hover:text-gray-300 transition-colors">
+              <img src="/white-logo.png" alt="Logo" className="w-6 h-6" />
+              <h1 className="text-lg font-semibold text-[var(--color-text-primary)] group-hover:opacity-80 transition-opacity">
                 AI Tutor
               </h1>
             </a>
@@ -301,7 +301,7 @@ export function Sidebar({
                           </div>
                           {/* Preview of last message */}
                           {conversation.messages.length > 0 && (
-                            <div className="text-xs opacity-60 line-clamp-2 mt-0.5">
+                            <div className="text-xs opacity-70 line-clamp-2 mt-0.5">
                               {conversation.messages[conversation.messages.length - 1].content.slice(0, 80)}
                             </div>
                           )}
@@ -523,14 +523,9 @@ export function Sidebar({
         </div>
         {!isFolded && (
           <div className="mt-2 text-center">
-            <a
-              href="https://www.linkedin.com/in/tanmay-kalbande/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-            >
+            <p className="text-xs text-[var(--color-text-placeholder)]">
               Developed by Tanmay Kalbande
-            </a>
+            </p>
           </div>
         )}
       </div>
