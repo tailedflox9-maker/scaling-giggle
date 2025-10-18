@@ -1,8 +1,9 @@
-import { Conversation, APISettings, Note, TutorMode } from '../types';
+import { Conversation, APISettings, Note, Flowchart } from '../types';
 
 const CONVERSATIONS_KEY = 'ai-tutor-conversations';
 const SETTINGS_KEY = 'ai-tutor-settings';
 const NOTES_KEY = 'ai-tutor-notes';
+const FLOWCHARTS_KEY = 'ai-tutor-flowcharts';
 
 const defaultSettings: APISettings = {
   googleApiKey: '',
@@ -131,11 +132,50 @@ export const storageUtils = {
     }
   },
 
+  getFlowcharts(): Flowchart[] {
+    try {
+      const stored = localStorage.getItem(FLOWCHARTS_KEY);
+      if (!stored) return [];
+      
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) {
+        console.error('Invalid flowcharts format');
+        return [];
+      }
+
+      return parsed.map((chart: any) => ({
+        ...chart,
+        createdAt: parseDate(chart.createdAt),
+        updatedAt: parseDate(chart.updatedAt),
+      }));
+    } catch (error) {
+      console.error('Error loading flowcharts:', error);
+      localStorage.removeItem(FLOWCHARTS_KEY);
+      return [];
+    }
+  },
+
+  saveFlowcharts(flowcharts: Flowchart[]): void {
+    try {
+      if (!Array.isArray(flowcharts)) {
+        console.error('Invalid flowcharts data');
+        return;
+      }
+      localStorage.setItem(FLOWCHARTS_KEY, JSON.stringify(flowcharts));
+    } catch (error) {
+      console.error('Error saving flowcharts:', error);
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        alert('Storage quota exceeded. Please delete some flowcharts.');
+      }
+    }
+  },
+
   clearAllData(): void {
     try {
       localStorage.removeItem(CONVERSATIONS_KEY);
       localStorage.removeItem(SETTINGS_KEY);
       localStorage.removeItem(NOTES_KEY);
+      localStorage.removeItem(FLOWCHARTS_KEY);
     } catch (error) {
       console.error('Error clearing data:', error);
     }
