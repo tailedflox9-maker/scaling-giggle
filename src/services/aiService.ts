@@ -146,7 +146,7 @@ class AiService {
     // Use minimal system prompt for flowchart generation
     const systemPrompt = 'You are a helpful assistant that generates flowcharts in JSON format.';
 
-    const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:streamGenerateContent?key=${this.settings.googleApiKey}&alt=sse`;
+    const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:streamGenerateContent?key=${this.settings.googleApiKey}&alt=sse`;
 
     // Prepend system prompt + user messages (Gemini-compatible)
     const googleMessages = [
