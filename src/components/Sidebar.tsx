@@ -267,7 +267,7 @@ export function Sidebar({
                 <div
                   key={conversation.id}
                   onClick={() => onSelectConversation(conversation.id)}
-                  className={`group flex items-center gap-2 ${isFolded ? 'justify-center p-2.5' : 'p-2'} rounded-lg cursor-pointer transition-colors relative ${
+                  className={`group relative flex items-start gap-2 ${isFolded ? 'justify-center p-2.5' : 'p-2'} rounded-lg cursor-pointer transition-colors ${
                     activeView === 'chat' && currentConversationId === conversation.id
                       ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
                       : 'hover:bg-[var(--color-card)] text-[var(--color-text-primary)]'
@@ -283,7 +283,7 @@ export function Sidebar({
                     </div>
                   ) : (
                     <>
-                      <div className="relative flex-shrink-0">
+                      <div className="relative flex-shrink-0 mt-0.5">
                         <MessageSquare className="w-4 h-4" />
                         {conversation.isPinned && (
                           <Pin className="w-2.5 h-2.5 absolute -top-1 -right-1 text-yellow-400" />
@@ -302,48 +302,37 @@ export function Sidebar({
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
-                        <div className="flex-1 min-w-0 text-sm font-medium line-clamp-2">
+                        <div className="flex-1 min-w-0 text-sm font-medium">
                           {conversation.title}
                         </div>
                       )}
                       
-                      <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-0.5 flex-shrink-0">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onTogglePinConversation(conversation.id);
-                          }}
-                          className={`p-1 rounded ${
-                            currentConversationId === conversation.id ? 'hover:bg-black/10' : 'hover:bg-[var(--color-border)]'
-                          }`}
-                          title={conversation.isPinned ? 'Unpin' : 'Pin'}
-                        >
-                          <Pin className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartEditing(conversation);
-                          }}
-                          className={`p-1 rounded ${
-                            currentConversationId === conversation.id ? 'hover:bg-black/10' : 'hover:bg-[var(--color-border)]'
-                          }`}
-                          title="Rename"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteConversation(conversation.id);
-                          }}
-                          className={`p-1 rounded ${
-                            currentConversationId === conversation.id ? 'hover:bg-black/10 text-red-400' : 'hover:bg-red-900/30 text-red-400'
-                          }`}
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="absolute inset-y-0 right-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                        <div className="flex items-center pl-8 pr-1.5 h-full bg-gradient-to-l from-[var(--color-card)] via-[var(--color-card)]/95 to-transparent backdrop-blur-[2px]">
+                          <div className="flex gap-0.5 flex-shrink-0">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onTogglePinConversation(conversation.id); }}
+                              className={`p-1 rounded ${ currentConversationId === conversation.id ? 'hover:bg-black/10' : 'hover:bg-[var(--color-border)]' }`}
+                              title={conversation.isPinned ? 'Unpin' : 'Pin'}
+                            >
+                              <Pin className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleStartEditing(conversation); }}
+                              className={`p-1 rounded ${ currentConversationId === conversation.id ? 'hover:bg-black/10' : 'hover:bg-[var(--color-border)]' }`}
+                              title="Rename"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onDeleteConversation(conversation.id); }}
+                              className={`p-1 rounded ${ currentConversationId === conversation.id ? 'hover:bg-black/10 text-red-400' : 'hover:bg-red-900/30 text-red-400' }`}
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}
