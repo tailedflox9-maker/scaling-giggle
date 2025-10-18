@@ -568,20 +568,40 @@ function App() {
   };
   
   // --- MODE SUGGESTION HANDLERS ---
-  const handleAcceptModeSuggestion = () => {
-    if (modeSuggestion) {
-      handleTutorModeChange(modeSuggestion.mode);
-      setModeSuggestion(null);
+  const handleAcceptModeSuggestion = async () => {
+    if (!modeSuggestion) return;
+    
+    const newMode = modeSuggestion.mode;
+    
+    // Get friendly mode name
+    const modeNames: Record<TutorMode, string> = {
+      standard: 'Standard Tutor',
+      exam: 'Exam Coach',
+      mentor: 'Friendly Mentor',
+      creative: 'Creative Guide'
+    };
+    
+    // Switch mode first
+    handleTutorModeChange(newMode);
+    setModeSuggestion(null);
+    
+    // Show notification
+    showNotification(`Switched to ${modeNames[newMode]} mode! Regenerating response...`, 'success');
+    
+    // Auto-regenerate the last assistant message if it exists
+    const conversation = conversations.find(c => c.id === currentConversationId);
+    if (conversation && conversation.messages.length > 0) {
+      // Find the last assistant message
+      const lastAssistantIndex = conversation.messages.length - 1;
+      const lastMessage = conversation.messages[lastAssistantIndex];
       
-      // Get friendly mode name
-      const modeNames: Record<TutorMode, string> = {
-        standard: 'Standard Tutor',
-        exam: 'Exam Coach',
-        mentor: 'Friendly Mentor',
-        creative: 'Creative Guide'
-      };
-      
-      showNotification(`Switched to ${modeNames[modeSuggestion.mode]} mode!`, 'success');
+      if (lastMessage.role === 'assistant') {
+        // Wait a bit for the mode to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Trigger regeneration
+        handleRegenerateResponse(lastMessage.id);
+      }
     }
   };
 
