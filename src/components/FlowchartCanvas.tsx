@@ -1,8 +1,7 @@
 // src/components/FlowchartCanvas.tsx
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Plus, Minus, Move, MousePointer, Hand, Trash2, Edit2, Save, Download, Maximize2, Info } from 'lucide-react';
+import { Plus, Minus, Move, MousePointer, Hand, Trash2, Edit2, Save, Download, Maximize2 } from 'lucide-react';
 import { FlowchartNode, FlowchartEdge, NodeType, FlowchartViewport } from '../types/flowchart';
-import { Tooltip } from './Tooltip'; // Assuming you add a simple Tooltip component (see below)
 
 interface FlowchartCanvasProps {
   nodes: FlowchartNode[];
@@ -18,44 +17,51 @@ interface FlowchartCanvasProps {
 const nodeTypeStyles: Record<NodeType, { 
   bg: string; 
   border: string; 
-  gradient: string;
-  shape: string;
+  shape: string; 
+  textColor: string;
+  icon: React.ReactNode;
 }> = {
   start: { 
-    bg: 'from-green-500 to-green-600', 
-    border: '#16a34a', 
-    gradient: 'from-green-500/90 to-green-600/90',
-    shape: 'rounded-full' 
+    bg: 'var(--color-card)', 
+    border: 'var(--color-border)', 
+    shape: 'rounded-full', 
+    textColor: 'var(--color-text-primary)',
+    icon: null
   },
   end: { 
-    bg: 'from-red-500 to-red-600', 
-    border: '#dc2626', 
-    gradient: 'from-red-500/90 to-red-600/90',
-    shape: 'rounded-full' 
+    bg: 'var(--color-card)', 
+    border: 'var(--color-border)', 
+    shape: 'rounded-full', 
+    textColor: 'var(--color-text-primary)',
+    icon: null
   },
   process: { 
-    bg: 'from-blue-500 to-blue-600', 
-    border: '#2563eb', 
-    gradient: 'from-blue-500/90 to-blue-600/90',
-    shape: 'rounded-xl' 
+    bg: 'var(--color-card)', 
+    border: 'var(--color-border)', 
+    shape: 'rounded-lg', 
+    textColor: 'var(--color-text-primary)',
+    icon: null
   },
   decision: { 
-    bg: 'from-amber-500 to-amber-600', 
-    border: '#d97706', 
-    gradient: 'from-amber-500/90 to-amber-600/90',
-    shape: 'diamond' 
+    bg: 'var(--color-card)', 
+    border: 'var(--color-border)', 
+    shape: 'diamond', 
+    textColor: 'var(--color-text-primary)',
+    icon: null
   },
   topic: { 
-    bg: 'from-purple-500 to-purple-600', 
-    border: '#7c3aed', 
-    gradient: 'from-purple-500/90 to-purple-600/90',
-    shape: 'rounded-xl' 
+    bg: 'var(--color-card)', 
+    border: 'var(--color-border)', 
+    shape: 'rounded-lg', 
+    textColor: 'var(--color-text-primary)',
+    icon: null
   },
   concept: { 
-    bg: 'from-cyan-500 to-cyan-600', 
-    border: '#0891b2', 
-    gradient: 'from-cyan-500/90 to-cyan-600/90',
-    shape: 'rounded-xl' 
+    bg: 'var(--color-card)', 
+    border: 'var(--color-border)', 
+    shape: 'rounded-lg', 
+    textColor: 'var(--color-text-primary)',
+    icon: null
   },
 };
 
@@ -77,7 +83,7 @@ export function FlowchartCanvas({
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
-  const [showDescription, setShowDescription] = useState<string | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -175,14 +181,6 @@ export function FlowchartCanvas({
     setEditingLabel(node.label);
   }, [readOnly]);
 
-  const handleNodeHover = useCallback((nodeId: string) => {
-    setShowDescription(nodeId);
-  }, []);
-
-  const handleNodeLeave = useCallback(() => {
-    setShowDescription(null);
-  }, []);
-
   const handleDeleteNode = useCallback(() => {
     if (!selectedNodeId || readOnly) return;
     onNodesChange(nodes.filter(n => n.id !== selectedNodeId));
@@ -209,8 +207,7 @@ export function FlowchartCanvas({
     const style = nodeTypeStyles[node.type];
     const isSelected = selectedNodeId === node.id;
     const isEditing = editingNodeId === node.id;
-    const hoveredNode = nodes.find(n => n.id === showDescription);
-    const hasDescription = node.description && node.description.trim();
+    const isHovered = hoveredNodeId === node.id;
     
     const x = node.position.x * viewport.zoom + viewport.x;
     const y = node.position.y * viewport.zoom + viewport.y;
@@ -218,41 +215,29 @@ export function FlowchartCanvas({
     return (
       <div
         key={node.id}
-        className={`absolute transition-all duration-300 ease-out group ${
-          isSelected 
-            ? 'ring-4 ring-[var(--color-accent-bg)]/30 scale-105 shadow-2xl shadow-black/50' 
-            : 'hover:scale-105 hover:shadow-xl hover:shadow-black/30'
-        }`}
+        className={`absolute cursor-move transition-all duration-200 ${isSelected ? 'z-10' : 'z-0'}`}
         style={{
           left: x,
           top: y,
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(-50%, -50%) scale(${isSelected ? 1.05 : isHovered ? 1.02 : 1})`,
           minWidth: '140px',
           maxWidth: '220px',
-          zIndex: isSelected ? 10 : 1,
         }}
         onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
         onDoubleClick={() => handleNodeDoubleClick(node)}
-        onMouseEnter={() => handleNodeHover(node.id)}
-        onMouseLeave={handleNodeLeave}
+        onMouseEnter={() => setHoveredNodeId(node.id)}
+        onMouseLeave={() => setHoveredNodeId(null)}
       >
         <div
-          className={`relative px-4 py-3 text-white font-semibold text-center shadow-lg backdrop-blur-md border-2 overflow-hidden ${
-            node.type === 'decision' ? 'transform rotate-45 w-24 h-24 flex items-center justify-center' : `${style.shape} ${style.bg}`
-          }`}
+          className={`relative px-4 py-3 font-semibold text-center border-2 ${style.shape} ${isSelected ? 'ring-2 ring-[var(--color-accent-bg)]' : ''}`}
           style={{
-            background: `linear-gradient(135deg, ${style.gradient}, ${style.bg})`,
-            borderColor: style.border,
-            boxShadow: 
-              '0 4px 6px -1px rgba(0, 0, 0, 0.1), ' +
-              '0 2px 4px -1px rgba(0, 0, 0, 0.06), ' +
-              'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            backgroundColor: style.bg,
+            borderColor: isSelected ? 'var(--color-accent-bg)' : style.border,
+            color: style.textColor,
+            transform: node.type === 'decision' ? 'rotate(45deg)' : 'none',
           }}
         >
-          {node.type === 'decision' && (
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/90 to-amber-600/90 rounded-full transform -rotate-45" />
-          )}
-          <div className={`${node.type === 'decision' ? 'transform -rotate-45 w-full h-full flex items-center justify-center' : ''}`}>
+          <div className={node.type === 'decision' ? 'transform -rotate-45' : ''}>
             {isEditing ? (
               <input
                 type="text"
@@ -266,21 +251,12 @@ export function FlowchartCanvas({
                     setEditingLabel('');
                   }
                 }}
-                className="w-full bg-white/20 text-white text-center border-none outline-none rounded px-2 py-1 text-sm font-semibold"
+                className="w-full bg-[var(--color-bg)] text-[var(--color-text-primary)] text-center border border-[var(--color-border)] outline-none rounded px-2 py-1"
                 autoFocus
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              <span className="text-sm leading-tight block truncate px-1">{node.label}</span>
-            )}
-            {hasDescription && (
-              <Tooltip 
-                content={node.description!} 
-                visible={showDescription === node.id}
-                className="absolute -top-2 -right-2 w-8 h-8 bg-[var(--color-card)]/90 text-[var(--color-text-secondary)] rounded-full flex items-center justify-center hover:bg-[var(--color-accent-bg)]"
-              >
-                <Info className="w-3 h-3" />
-              </Tooltip>
+              <span className="text-sm font-medium">{node.label}</span>
             )}
           </div>
         </div>
@@ -299,48 +275,38 @@ export function FlowchartCanvas({
     const x2 = targetNode.position.x * viewport.zoom + viewport.x;
     const y2 = targetNode.position.y * viewport.zoom + viewport.y;
 
-    // Curved path using cubic Bézier for smoother curves
-    const cpX1 = x1 + (x2 - x1) * 0.25;
-    const cpY1 = y1 + (y2 - y1) * 0.25;
-    const cpX2 = x2 - (x2 - x1) * 0.25;
-    const cpY2 = y2 - (y2 - y1) * 0.25;
-    const pathD = `M ${x1} ${y1} C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${x2} ${y2}`;
-
     return (
-      <g key={edge.id} className="transition-all duration-300 group">
+      <g key={edge.id}>
         <defs>
           <marker
             id={`arrowhead-${edge.id}`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="11"
-            refY="6"
+            markerWidth="10"
+            markerHeight="10"
+            refX="9"
+            refY="3"
             orient="auto"
           >
-            <polygon points="0 0, 12 6, 0 12" fill="url(#arrowGradient)" />
+            <polygon points="0 0, 10 3, 0 6" fill="var(--color-text-secondary)" />
           </marker>
-          <linearGradient id={`arrowGradient-${edge.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#9ca3af" />
-            <stop offset="100%" stopColor="#6b7280" />
-          </linearGradient>
         </defs>
-        <path
-          d={pathD}
-          stroke="url(#edgeGradient)"
-          strokeWidth="3"
-          fill="none"
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke="var(--color-text-secondary)"
+          strokeWidth="2"
           markerEnd={`url(#arrowhead-${edge.id})`}
-          className="group-hover:stroke-[var(--color-accent-bg)] group-hover:stroke-width-4"
+          className={edge.style?.animated ? 'animate-pulse' : ''}
         />
         {edge.label && (
           <text
             x={(x1 + x2) / 2}
-            y={(y1 + y2) / 2 - 10}
-            fill="[var(--color-text-secondary)]"
-            fontSize="11"
-            fontWeight="500"
+            y={(y1 + y2) / 2}
+            fill="var(--color-text-secondary)"
+            fontSize="12"
             textAnchor="middle"
-            className="pointer-events-none drop-shadow-sm"
+            className="pointer-events-none"
           >
             {edge.label}
           </text>
@@ -350,27 +316,25 @@ export function FlowchartCanvas({
   };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-[var(--color-bg)] to-[var(--color-sidebar)]/50">
-      {/* Enhanced Toolbar */}
-      <div className="flex items-center justify-between p-4 bg-[var(--color-card)]/80 backdrop-blur-md border-b border-[var(--color-border)]/50 shadow-lg">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-[var(--color-text-primary)] bg-gradient-to-r from-[var(--color-accent-bg)] to-[var(--color-accent-bg)]/80 bg-clip-text text-transparent">
-            {title || 'Flowchart'}
-          </h2>
-          <span className="text-xs text-[var(--color-text-secondary)] px-3 py-1 bg-[var(--color-border)]/50 rounded-full">
-            {nodes.length} nodes • {edges.length} connections
+    <div className="flex flex-col h-full bg-[var(--color-bg)]">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between p-3 bg-[var(--color-sidebar)] border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{title || 'Flowchart'}</h2>
+          <span className="text-xs text-[var(--color-text-secondary)] px-2 py-1 bg-[var(--color-card)] rounded">
+            {nodes.length} nodes
           </span>
         </div>
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {!readOnly && (
             <>
               <button
                 onClick={() => setTool('select')}
-                className={`p-2.5 rounded-xl transition-all duration-200 shadow-sm ${
+                className={`p-2 rounded-lg transition-colors ${
                   tool === 'select'
-                    ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)] shadow-md' 
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] hover:shadow-md hover:text-[var(--color-text-primary)]'
+                    ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)]'
                 }`}
                 title="Select Tool"
               >
@@ -378,39 +342,39 @@ export function FlowchartCanvas({
               </button>
               <button
                 onClick={() => setTool('pan')}
-                className={`p-2.5 rounded-xl transition-all duration-200 shadow-sm ${
+                className={`p-2 rounded-lg transition-colors ${
                   tool === 'pan'
-                    ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)] shadow-md' 
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] hover:shadow-md hover:text-[var(--color-text-primary)]'
+                    ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-card)]'
                 }`}
                 title="Pan Tool"
               >
                 <Hand className="w-4 h-4" />
               </button>
-              <div className="w-px h-6 bg-[var(--color-border)]/50" />
+              <div className="w-px h-6 bg-[var(--color-border)]" />
             </>
           )}
           
           <button
             onClick={zoomOut}
-            className="p-2.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
             title="Zoom Out"
           >
             <Minus className="w-4 h-4" />
           </button>
-          <span className="text-sm text-[var(--color-text-primary)] font-mono min-w-[4rem] text-center">
+          <span className="text-sm text-[var(--color-text-secondary)] min-w-[4rem] text-center">
             {Math.round(viewport.zoom * 100)}%
           </span>
           <button
             onClick={zoomIn}
-            className="p-2.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
             title="Zoom In"
           >
             <Plus className="w-4 h-4" />
           </button>
           <button
             onClick={resetView}
-            className="p-2.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+            className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
             title="Reset View"
           >
             <Maximize2 className="w-4 h-4" />
@@ -418,11 +382,11 @@ export function FlowchartCanvas({
           
           {!readOnly && (
             <>
-              <div className="w-px h-6 bg-[var(--color-border)]/50" />
+              <div className="w-px h-6 bg-[var(--color-border)]" />
               {selectedNodeId && (
                 <button
                   onClick={handleDeleteNode}
-                  className="p-2.5 text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
                   title="Delete Node"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -431,7 +395,7 @@ export function FlowchartCanvas({
               {onSave && (
                 <button
                   onClick={onSave}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[var(--color-accent-bg)] to-[var(--color-accent-bg)]/80 text-[var(--color-accent-text)] rounded-xl hover:from-[var(--color-accent-bg-hover)] shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--color-accent-bg)] text-[var(--color-accent-text)] rounded-lg hover:bg-[var(--color-accent-bg-hover)] transition-colors font-semibold"
                 >
                   <Save className="w-4 h-4" />
                   Save
@@ -443,8 +407,8 @@ export function FlowchartCanvas({
           {onExport && (
             <button
               onClick={onExport}
-              className="p-2.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-              title="Export JSON"
+              className="p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-card)] rounded-lg transition-colors"
+              title="Export"
             >
               <Download className="w-4 h-4" />
             </button>
@@ -452,40 +416,34 @@ export function FlowchartCanvas({
         </div>
       </div>
 
-      {/* Enhanced Canvas */}
+      {/* Canvas */}
       <div
         ref={canvasRef}
-        className="flex-1 relative overflow-hidden cursor-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMiAxMkgyTDEyIDJMMTIgMTJaIiBzdHJva2U9IiM5Q0E0QUIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+'), auto] active:cursor-grabbing"
+        className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* Subtle grid background */}
+        {/* Grid background */}
         <div
-          className="absolute inset-0 opacity-5"
+          className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(156, 163, 175, 0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(156, 163, 175, 0.1) 1px, transparent 1px)
+              linear-gradient(var(--color-border) 1px, transparent 1px),
+              linear-gradient(90deg, var(--color-border) 1px, transparent 1px)
             `,
-            backgroundSize: `${25 * viewport.zoom}px ${25 * viewport.zoom}px`,
-            backgroundPosition: `${viewport.x % (25 * viewport.zoom)}px ${viewport.y % (25 * viewport.zoom)}px`,
+            backgroundSize: `${20 * viewport.zoom}px ${20 * viewport.zoom}px`,
+            backgroundPosition: `${viewport.x}px ${viewport.y}px`,
           }}
         />
 
-        {/* SVG for curved edges */}
+        {/* SVG for edges */}
         <svg
           ref={svgRef}
           className="absolute inset-0 pointer-events-none"
           style={{ width: '100%', height: '100%' }}
         >
-          <defs>
-            <linearGradient id="edgeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#e5e7eb" />
-              <stop offset="100%" stopColor="#d1d5db" />
-            </linearGradient>
-          </defs>
           {edges.map(renderEdge)}
         </svg>
 
