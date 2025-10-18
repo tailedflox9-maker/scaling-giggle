@@ -9,7 +9,8 @@ import { QuizModal } from './components/QuizModal';
 import { Notification } from './components/Notification';
 import { ModeSuggestionBanner } from './components/ModeSuggestionBanner';
 import { Conversation, Message, APISettings, Note, StudySession, Flowchart, TutorMode } from './types';
-import { generateId, generateConversationTitle } from './utils/helpers';
+import { generateId } from './utils/helpers';
+import { generateSmartTitle } from './services/titleGenerator';
 import { usePWA } from './hooks/usePWA';
 import { Menu } from 'lucide-react';
 import { storageUtils } from './utils/storage';
@@ -212,9 +213,23 @@ function App() {
     const existingConversation = conversations.find(c => c.id === currentConversationId);
 
     if (activeView !== 'chat' || !existingConversation) {
+      // Generate smart title (with AI if available)
+      const initialTitle = await generateSmartTitle(
+        content,
+        settings,
+        (aiTitle) => {
+          // Update title once AI generates a better one
+          setConversations(prev => prev.map(c =>
+            c.id === conversationToUpdate.id
+              ? { ...c, title: aiTitle }
+              : c
+          ));
+        }
+      );
+
       conversationToUpdate = {
         id: generateId(),
-        title: generateConversationTitle(content),
+        title: initialTitle,
         messages: [userMessage],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -232,7 +247,21 @@ function App() {
       }
     } else {
       // ✨ Smart mode detection on first message of existing empty conversation
+      let titleToUse = existingConversation.title;
+      
       if (existingConversation.messages.length === 0) {
+        titleToUse = await generateSmartTitle(
+          content,
+          settings,
+          (aiTitle) => {
+            setConversations(prev => prev.map(c =>
+              c.id === existingConversation.id
+                ? { ...c, title: aiTitle }
+                : c
+            ));
+          }
+        );
+
         const detection = detectBestMode(content);
         if (shouldSuggestMode(detection, settings.selectedTutorMode)) {
           setModeSuggestion({
@@ -244,9 +273,7 @@ function App() {
 
       conversationToUpdate = {
         ...existingConversation,
-        title: existingConversation.messages.length === 0 
-               ? generateConversationTitle(content) 
-               : existingConversation.title,
+        title: titleToUse,
         messages: [...existingConversation.messages, userMessage],
         updatedAt: new Date(),
       };
@@ -431,7 +458,7 @@ function App() {
     if (!currentConversationId) return;
     const newNote: Note = {
       id: generateId(), 
-      title: generateConversationTitle(content), 
+      title: content.slice(0, 50) + (content.length > 50 ? '...' : ''),
       content, 
       createdAt: new Date(), 
       updatedAt: new Date(), 
@@ -732,6 +759,7 @@ function App() {
             <ChatArea
               conversation={currentConversation}
               onSendMessage={handleSendMessage}
+              onNewConversation={handleNewConversation}
               isLoading={isChatLoading}
               isQuizLoading={isQuizLoading}
               isFlowchartLoading={isFlowchartLoading}
