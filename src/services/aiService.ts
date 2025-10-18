@@ -357,18 +357,33 @@ class AiService {
       .map(m => `${m.role === 'user' ? 'Q:' : 'A:'} ${m.content}`)
       .join('\n\n');
 
-    const prompt = `
-Based on the following conversation, create a multiple-choice quiz with 5 questions to test understanding.
+    const prompt = `Based on the following conversation, create a multiple-choice quiz with 5 questions to test understanding of the key concepts discussed.
 
 Conversation:
 ---
 ${conversationText.slice(0, 6000)}
 ---
 
-Format the output as a single JSON object with a "questions" array.
-Each question must include: "question" (string), "options" (array of 4 strings), "answer" (the correct string), and "explanation" (string).
-Return ONLY valid JSON. No markdown or extra text.
-`;
+IMPORTANT INSTRUCTIONS:
+1. Create exactly 5 multiple-choice questions
+2. Each question must have exactly 4 options
+3. One option must be the correct answer
+4. Include a brief explanation for each answer
+
+OUTPUT FORMAT - Return ONLY this JSON structure with no extra text, no markdown, no code blocks:
+
+{
+  "questions": [
+    {
+      "question": "What is the main concept discussed?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "answer": "Option B",
+      "explanation": "Brief explanation of why this is correct"
+    }
+  ]
+}
+
+Generate the quiz now:`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -381,9 +396,15 @@ Return ONLY valid JSON. No markdown or extra text.
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [
-              { role: 'user', parts: [{ text: prompt }] },
-              { role: 'model', parts: [{ text: 'Understood. I will return only JSON.' }] }
+              { 
+                role: 'user', 
+                parts: [{ text: prompt }] 
+              }
             ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 2048,
+            }
           }),
           signal: controller.signal,
         }
