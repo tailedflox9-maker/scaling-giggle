@@ -555,18 +555,24 @@ export function FlowchartCanvas({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {/* Grid background */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `
-              linear-gradient(var(--color-border) 1px, transparent 1px),
-              linear-gradient(90deg, var(--color-border) 1px, transparent 1px)
-            `,
-            backgroundSize: `${20 * viewport.zoom}px ${20 * viewport.zoom}px`,
-            backgroundPosition: `${viewport.x}px ${viewport.y}px`,
-          }}
-        />
+        {/* Dot grid background */}
+        <svg
+          className="absolute inset-0 opacity-40 pointer-events-none"
+          style={{ width: '100%', height: '100%' }}
+        >
+          <defs>
+            <pattern
+              id="dots"
+              x={20 * viewport.zoom}
+              y={20 * viewport.zoom}
+              patternUnits="userSpaceOnUse"
+              patternTransform={`translate(${viewport.x}, ${viewport.y})`}
+            >
+              <circle cx="1" cy="1" r="1.5" fill="#555555" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#dots)" />
+        </svg>
 
         {/* SVG for edges */}
         <svg
