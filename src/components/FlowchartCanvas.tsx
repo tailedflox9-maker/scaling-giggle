@@ -79,7 +79,7 @@ export function FlowchartCanvas({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
-  const [tool, setTool] = useState<'select' | 'pan'>('select');
+  const [tool, setTool] = useState<'select' | 'pan'>('pan');
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
@@ -272,8 +272,8 @@ export function FlowchartCanvas({
           left: x,
           top: y,
           transform: `translate(-50%, -50%) scale(${isSelected ? 1.05 : isHovered ? 1.02 : 1})`,
-          minWidth: '140px',
-          maxWidth: '220px',
+          minWidth: '100px',
+          maxWidth: '180px',
         }}
         onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
         onDoubleClick={() => handleNodeDoubleClick(node)}
@@ -281,7 +281,7 @@ export function FlowchartCanvas({
         onMouseLeave={() => setHoveredNodeId(null)}
       >
         <div
-          className={`relative px-4 py-3 font-semibold text-center border-2 ${style.shape} ${isSelected ? 'ring-2 ring-[var(--color-accent-bg)]' : ''}`}
+          className={`relative px-3 py-2 font-semibold text-center border-2 ${style.shape} ${isSelected ? 'ring-2 ring-[var(--color-accent-bg)]' : ''}`}
           style={{
             backgroundColor: style.bg,
             borderColor: isSelected ? 'var(--color-accent-bg)' : style.border,
@@ -336,14 +336,14 @@ export function FlowchartCanvas({
         <defs>
           <marker
             id={`arrowhead-${edge.id}`}
-            markerWidth="6"
-            markerHeight="6"
-            refX="5"
-            refY="2.5"
+            markerWidth="3"
+            markerHeight="3"
+            refX="2.5"
+            refY="1.5"
             orient="auto"
           >
             <polygon 
-              points="0 0, 6 2.5, 0 5" 
+              points="0 0, 3 1.5, 0 3" 
               fill="#9CA3AF"
             />
           </marker>
