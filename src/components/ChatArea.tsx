@@ -62,7 +62,7 @@ export function ChatArea({
       <div className="chat-area">
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <div className="text-center">
-            <div className="mb-12 flex justify-center">
+            <div className="mb-6 flex justify-center">
               <img
                 src="/white-logo.png"
                 alt="AI Tutor Logo"
@@ -107,7 +107,7 @@ export function ChatArea({
             // State 2a: The selected conversation is empty.
             <div className="flex items-center justify-center h-full">
               <div className="text-center p-4">
-                 <div className="mb-10 flex justify-center">
+                 <div className="mb-4 flex justify-center">
                   <img
                     src="/white-logo.png"
                     alt="AI Tutor Logo"
