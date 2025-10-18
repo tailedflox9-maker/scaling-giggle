@@ -158,7 +158,6 @@ function App() {
   };
 
   const handleSelectNote = (id: string | null) => {
-    // ALWAYS set to note view when this is called
     setActiveView('note');
     setCurrentNoteId(id);
     setCurrentConversationId(null);
@@ -167,7 +166,6 @@ function App() {
   };
 
   const handleSelectFlowchart = (id: string | null) => {
-    // ALWAYS set to flowchart view when this is called
     setActiveView('flowchart');
     setCurrentFlowchartId(id);
     setCurrentNoteId(null);
