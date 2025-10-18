@@ -55,7 +55,8 @@ export function ChatArea({
   const canGenerateQuiz = conversation && conversation.messages.length > 2;
   const canGenerateFlowchart = conversation && conversation.messages.length > 2;
 
-  if (!conversation) {
+  // --- FIX: Show welcome screen if no conversation OR if conversation is empty ---
+  if (!conversation || conversation.messages.length === 0) {
     return (
       <div className="chat-area">
         <div className="flex-1 flex items-center justify-center p-4">
