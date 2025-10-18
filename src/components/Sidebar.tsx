@@ -267,22 +267,29 @@ export function Sidebar({
                 <div
                   key={conversation.id}
                   onClick={() => onSelectConversation(conversation.id)}
-                  className={`group flex flex-col gap-1 ${isFolded ? 'justify-center p-2' : 'p-2.5'} rounded-lg cursor-pointer transition-colors relative ${
+                  className={`group flex items-center gap-2 ${isFolded ? 'justify-center p-2.5' : 'p-2'} rounded-lg cursor-pointer transition-colors relative ${
                     activeView === 'chat' && currentConversationId === conversation.id
                       ? 'bg-[var(--color-accent-bg)] text-[var(--color-accent-text)]'
                       : 'hover:bg-[var(--color-card)] text-[var(--color-text-primary)]'
                   }`}
-                  title={isFolded ? conversation.title : undefined}
+                  title={conversation.title}
                 >
-                  {conversation.isPinned && !isFolded && (
-                    <Pin className="w-3 h-3 absolute top-1.5 left-1.5 text-yellow-400" />
-                  )}
-                  
                   {isFolded ? (
-                    <MessageSquare className="w-4 h-4" />
+                    <div className="relative">
+                      <MessageSquare className="w-5 h-5" />
+                      {conversation.isPinned && (
+                        <Pin className="w-2.5 h-2.5 absolute -top-1 -right-1 text-yellow-400" />
+                      )}
+                    </div>
                   ) : (
-                    <div className="flex items-start gap-2">
-                      <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <>
+                      <div className="relative flex-shrink-0">
+                        <MessageSquare className="w-4 h-4" />
+                        {conversation.isPinned && (
+                          <Pin className="w-2.5 h-2.5 absolute -top-1 -right-1 text-yellow-400" />
+                        )}
+                      </div>
+                      
                       {editingId === conversation.id ? (
                         <input
                           type="text"
@@ -290,23 +297,16 @@ export function Sidebar({
                           onChange={(e) => setEditingTitle(e.target.value)}
                           onBlur={handleSaveEdit}
                           onKeyDown={handleKeyDown}
-                          className="flex-1 text-sm font-semibold bg-transparent border-b border-[var(--color-border)] focus:outline-none"
+                          className="flex-1 text-sm font-medium bg-transparent border-b border-[var(--color-border)] focus:outline-none"
                           autoFocus
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold truncate">
-                            {conversation.title}
-                          </div>
-                          {/* Preview of last message */}
-                          {conversation.messages.length > 0 && (
-                            <div className="text-xs opacity-70 line-clamp-2 mt-0.5">
-                              {conversation.messages[conversation.messages.length - 1].content.slice(0, 80)}
-                            </div>
-                          )}
+                        <div className="flex-1 min-w-0 text-sm font-medium line-clamp-2">
+                          {conversation.title}
                         </div>
                       )}
+                      
                       <div className="flex opacity-0 group-hover:opacity-100 transition-opacity gap-0.5 flex-shrink-0">
                         <button
                           onClick={(e) => {
@@ -345,7 +345,7 @@ export function Sidebar({
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               ))
@@ -523,9 +523,14 @@ export function Sidebar({
         </div>
         {!isFolded && (
           <div className="mt-2 text-center">
-            <p className="text-xs text-[var(--color-text-placeholder)]">
+            <a
+              href="https://tanmay-kalbande.github.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[var(--color-text-placeholder)] hover:text-[var(--color-text-primary)] transition-colors"
+            >
               Developed by Tanmay Kalbande
-            </p>
+            </a>
           </div>
         )}
       </div>
