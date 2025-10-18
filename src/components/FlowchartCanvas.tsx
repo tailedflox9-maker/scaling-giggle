@@ -19,49 +19,56 @@ const nodeTypeStyles: Record<NodeType, {
   border: string; 
   shape: string; 
   textColor: string;
-  icon: React.ReactNode;
+  borderWidth: string;
+  shadow: string;
 }> = {
   start: { 
-    bg: 'var(--color-card)', 
-    border: 'var(--color-border)', 
+    bg: '#1e3a5f', 
+    border: '#3b82f6', 
     shape: 'rounded-full', 
-    textColor: 'var(--color-text-primary)',
-    icon: null
+    textColor: '#ffffff',
+    borderWidth: '2px',
+    shadow: '0 0 12px rgba(59, 130, 246, 0.4)'
   },
   end: { 
-    bg: 'var(--color-card)', 
-    border: 'var(--color-border)', 
+    bg: '#1e3a5f', 
+    border: '#3b82f6', 
     shape: 'rounded-full', 
-    textColor: 'var(--color-text-primary)',
-    icon: null
+    textColor: '#ffffff',
+    borderWidth: '2px',
+    shadow: '0 0 12px rgba(59, 130, 246, 0.4)'
   },
   process: { 
     bg: 'var(--color-card)', 
     border: 'var(--color-border)', 
     shape: 'rounded-lg', 
     textColor: 'var(--color-text-primary)',
-    icon: null
+    borderWidth: '2px',
+    shadow: 'none'
   },
   decision: { 
-    bg: 'var(--color-card)', 
-    border: 'var(--color-border)', 
+    bg: '#3d2a1f', 
+    border: '#f59e0b', 
     shape: 'diamond', 
-    textColor: 'var(--color-text-primary)',
-    icon: null
+    textColor: '#fbbf24',
+    borderWidth: '2px',
+    shadow: '0 0 8px rgba(245, 158, 11, 0.3)'
   },
   topic: { 
-    bg: 'var(--color-card)', 
-    border: 'var(--color-border)', 
+    bg: '#1f2937', 
+    border: '#6366f1', 
     shape: 'rounded-lg', 
-    textColor: 'var(--color-text-primary)',
-    icon: null
+    textColor: '#e0e7ff',
+    borderWidth: '2px',
+    shadow: '0 0 8px rgba(99, 102, 241, 0.2)'
   },
   concept: { 
     bg: 'var(--color-card)', 
-    border: 'var(--color-border)', 
+    border: '#4b5563', 
     shape: 'rounded-lg', 
     textColor: 'var(--color-text-primary)',
-    icon: null
+    borderWidth: '1.5px',
+    shadow: 'none'
   },
 };
 
@@ -108,7 +115,7 @@ export function FlowchartCanvas({
       maxY = Math.max(maxY, node.position.y);
     });
 
-    // Add padding (node width/height estimation)
+    // Add padding
     const padding = 200;
     minX -= padding;
     maxX += padding;
@@ -132,7 +139,6 @@ export function FlowchartCanvas({
   // Center on initial load
   useEffect(() => {
     if (!isInitialized && nodes.length > 0) {
-      // Delay to ensure canvas is rendered
       setTimeout(() => {
         centerFlowchart();
         setIsInitialized(true);
@@ -255,6 +261,36 @@ export function FlowchartCanvas({
   const zoomOut = () => setViewport(prev => ({ ...prev, zoom: Math.max(0.1, prev.zoom / 1.2) }));
   const resetView = () => centerFlowchart();
 
+  // Generate curved path between two points
+  const generateCurvedPath = (x1: number, y1: number, x2: number, y2: number): string => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Calculate control points for smoother curves
+    const curvature = 0.3;
+    const controlPointOffset = distance * curvature;
+    
+    // Determine if connection is more vertical or horizontal
+    const isVertical = Math.abs(dy) > Math.abs(dx);
+    
+    if (isVertical) {
+      // Vertical connection - control points offset horizontally
+      const cx1 = x1;
+      const cy1 = y1 + controlPointOffset;
+      const cx2 = x2;
+      const cy2 = y2 - controlPointOffset;
+      return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+    } else {
+      // Horizontal connection - control points offset vertically
+      const cx1 = x1 + controlPointOffset;
+      const cy1 = y1;
+      const cx2 = x2 - controlPointOffset;
+      const cy2 = y2;
+      return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+    }
+  };
+
   const renderNode = (node: FlowchartNode) => {
     const style = nodeTypeStyles[node.type];
     const isSelected = selectedNodeId === node.id;
@@ -264,6 +300,10 @@ export function FlowchartCanvas({
     const x = node.position.x * viewport.zoom + viewport.x;
     const y = node.position.y * viewport.zoom + viewport.y;
 
+    // Adjust size based on node type
+    const minWidth = node.type === 'start' || node.type === 'end' ? '120px' : '100px';
+    const maxWidth = node.type === 'start' || node.type === 'end' ? '200px' : '180px';
+
     return (
       <div
         key={node.id}
@@ -272,8 +312,8 @@ export function FlowchartCanvas({
           left: x,
           top: y,
           transform: `translate(-50%, -50%) scale(${isSelected ? 1.05 : isHovered ? 1.02 : 1})`,
-          minWidth: '100px',
-          maxWidth: '180px',
+          minWidth,
+          maxWidth,
         }}
         onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
         onDoubleClick={() => handleNodeDoubleClick(node)}
@@ -281,12 +321,14 @@ export function FlowchartCanvas({
         onMouseLeave={() => setHoveredNodeId(null)}
       >
         <div
-          className={`relative px-3 py-2 font-semibold text-center border-2 ${style.shape} ${isSelected ? 'ring-2 ring-[var(--color-accent-bg)]' : ''}`}
+          className={`relative px-3 py-2 font-semibold text-center border ${style.shape} ${isSelected ? 'ring-2 ring-[var(--color-accent-bg)]' : ''}`}
           style={{
             backgroundColor: style.bg,
-            borderColor: isSelected ? 'var(--color-accent-bg)' : style.border,
+            borderColor: style.border,
+            borderWidth: style.borderWidth,
             color: style.textColor,
             transform: node.type === 'decision' ? 'rotate(45deg)' : 'none',
+            boxShadow: style.shadow,
           }}
         >
           <div className={node.type === 'decision' ? 'transform -rotate-45' : ''}>
@@ -327,7 +369,10 @@ export function FlowchartCanvas({
     const x2 = targetNode.position.x * viewport.zoom + viewport.x;
     const y2 = targetNode.position.y * viewport.zoom + viewport.y;
 
-    // Calculate midpoint for label
+    // Generate curved path
+    const pathData = generateCurvedPath(x1, y1, x2, y2);
+
+    // Calculate position for label (approximate midpoint of curve)
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
 
@@ -349,24 +394,21 @@ export function FlowchartCanvas({
           </marker>
         </defs>
         
-        {/* Main line with shadow effect */}
-        <line
-          x1={x1}
-          y1={y1}
-          x2={x2}
-          y2={y2}
+        {/* Shadow path for depth */}
+        <path
+          d={pathData}
           stroke="rgba(0,0,0,0.3)"
-          strokeWidth="5"
-          markerEnd={`url(#arrowhead-${edge.id})`}
+          strokeWidth="3"
+          fill="none"
           className={edge.style?.animated ? 'animate-pulse' : ''}
         />
-        <line
-          x1={x1}
-          y1={y1}
-          x2={x2}
-          y2={y2}
+        
+        {/* Main path */}
+        <path
+          d={pathData}
           stroke="#9CA3AF"
-          strokeWidth="3"
+          strokeWidth="2"
+          fill="none"
           markerEnd={`url(#arrowhead-${edge.id})`}
           className={edge.style?.animated ? 'animate-pulse' : ''}
         />
@@ -374,7 +416,6 @@ export function FlowchartCanvas({
         {/* Edge label with background */}
         {edge.label && (
           <g>
-            {/* Measure text to create proper background */}
             {(() => {
               const textLength = edge.label.length;
               const rectWidth = Math.max(textLength * 8 + 16, 60);
@@ -382,7 +423,6 @@ export function FlowchartCanvas({
               
               return (
                 <>
-                  {/* Background rectangle for label */}
                   <rect
                     x={midX - rectWidth / 2}
                     y={midY - rectHeight / 2}
@@ -393,12 +433,11 @@ export function FlowchartCanvas({
                     strokeWidth="1.5"
                     rx="6"
                   />
-                  {/* Label text */}
                   <text
                     x={midX}
                     y={midY + 5}
                     fill="#F3F4F6"
-                    fontSize="14"
+                    fontSize="13"
                     fontWeight="600"
                     textAnchor="middle"
                     className="pointer-events-none select-none"
