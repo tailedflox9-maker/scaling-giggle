@@ -23,20 +23,20 @@ const nodeTypeStyles: Record<NodeType, {
   shadow: string;
 }> = {
   start: { 
-    bg: '#1e3a5f', 
-    border: '#3b82f6', 
+    bg: '#1F1F1F', 
+    border: '#FFFFFF', 
     shape: 'rounded-full', 
-    textColor: '#ffffff',
+    textColor: '#FFFFFF',
     borderWidth: '2px',
-    shadow: '0 0 12px rgba(59, 130, 246, 0.4)'
+    shadow: '0 0 12px rgba(255, 255, 255, 0.3)'
   },
   end: { 
-    bg: '#1e3a5f', 
-    border: '#3b82f6', 
+    bg: '#1F1F1F', 
+    border: '#FFFFFF', 
     shape: 'rounded-full', 
-    textColor: '#ffffff',
+    textColor: '#FFFFFF',
     borderWidth: '2px',
-    shadow: '0 0 12px rgba(59, 130, 246, 0.4)'
+    shadow: '0 0 12px rgba(255, 255, 255, 0.3)'
   },
   process: { 
     bg: 'var(--color-card)', 
@@ -47,26 +47,26 @@ const nodeTypeStyles: Record<NodeType, {
     shadow: 'none'
   },
   decision: { 
-    bg: '#3d2a1f', 
-    border: '#f59e0b', 
+    bg: '#1F1F1F', 
+    border: '#F0F0F0', 
     shape: 'diamond', 
-    textColor: '#fbbf24',
+    textColor: '#F0F0F0',
     borderWidth: '2px',
-    shadow: '0 0 8px rgba(245, 158, 11, 0.3)'
+    shadow: '0 0 8px rgba(240, 240, 240, 0.25)'
   },
   topic: { 
-    bg: '#1f2937', 
-    border: '#6366f1', 
+    bg: '#141414', 
+    border: '#A0A0A', 
     shape: 'rounded-lg', 
-    textColor: '#e0e7ff',
+    textColor: '#FFFFFF',
     borderWidth: '2px',
-    shadow: '0 0 8px rgba(99, 102, 241, 0.2)'
+    shadow: '0 0 6px rgba(160, 160, 160, 0.2)'
   },
   concept: { 
     bg: 'var(--color-card)', 
-    border: '#4b5563', 
+    border: 'var(--color-border)', 
     shape: 'rounded-lg', 
-    textColor: 'var(--color-text-primary)',
+    textColor: 'var(--color-text-secondary)',
     borderWidth: '1.5px',
     shadow: 'none'
   },
@@ -389,7 +389,7 @@ export function FlowchartCanvas({
           >
             <polygon 
               points="0 0, 3 1.5, 0 3" 
-              fill="#9CA3AF"
+              fill="#A0A0A"
             />
           </marker>
         </defs>
@@ -397,7 +397,7 @@ export function FlowchartCanvas({
         {/* Shadow path for depth */}
         <path
           d={pathData}
-          stroke="rgba(0,0,0,0.3)"
+          stroke="rgba(42, 42, 42, 0.6)"
           strokeWidth="3"
           fill="none"
           className={edge.style?.animated ? 'animate-pulse' : ''}
@@ -406,7 +406,7 @@ export function FlowchartCanvas({
         {/* Main path */}
         <path
           d={pathData}
-          stroke="#9CA3AF"
+          stroke="#A0A0A"
           strokeWidth="2"
           fill="none"
           markerEnd={`url(#arrowhead-${edge.id})`}
@@ -428,15 +428,15 @@ export function FlowchartCanvas({
                     y={midY - rectHeight / 2}
                     width={rectWidth}
                     height={rectHeight}
-                    fill="rgba(17, 24, 39, 0.95)"
-                    stroke="#4B5563"
+                    fill="#141414"
+                    stroke="#2A2A2A"
                     strokeWidth="1.5"
                     rx="6"
                   />
                   <text
                     x={midX}
                     y={midY + 5}
-                    fill="#F3F4F6"
+                    fill="#FFFFFF"
                     fontSize="13"
                     fontWeight="600"
                     textAnchor="middle"
