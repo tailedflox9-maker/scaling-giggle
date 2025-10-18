@@ -292,12 +292,12 @@ export async function generateFlowchartFromConversation(
   const prompt = createFlowchartPrompt(conversationText);
   
   try {
-    // Use streaming API to get response with Gemini 2.5 Flash model
+    // Use dedicated flowchart method that ALWAYS uses Gemini 2.5 Flash
     let fullResponse = '';
     
-    for await (const chunk of aiService.generateStreamingResponse([
+    for await (const chunk of aiService.generateFlowchartResponse([
       { role: 'user', content: prompt }
-    ], 'models/gemini-2.5-flash')) {
+    ])) {
       fullResponse += chunk;
     }
     
