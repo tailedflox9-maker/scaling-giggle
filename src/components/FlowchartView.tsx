@@ -1,5 +1,5 @@
 // src/components/FlowchartView.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { FlowchartCanvas } from './FlowchartCanvas';
 import { Flowchart } from '../types/flowchart';
 import { Lightbulb, Sparkles } from 'lucide-react';
@@ -38,24 +38,54 @@ export function FlowchartView({ flowchart, onSave, onExport }: FlowchartViewProp
     );
   }
 
+  // Handle save - pass the updated flowchart to parent
+  const handleSave = () => {
+    if (onSave) {
+      onSave(flowchart);
+    }
+  };
+
+  // Handle export - pass the flowchart to parent
+  const handleExport = () => {
+    if (onExport) {
+      onExport(flowchart);
+    }
+  };
+
+  // Handle node changes - update local state and trigger save
+  const handleNodesChange = (nodes: typeof flowchart.nodes) => {
+    const updatedFlowchart = {
+      ...flowchart,
+      nodes,
+      updatedAt: new Date()
+    };
+    if (onSave) {
+      onSave(updatedFlowchart);
+    }
+  };
+
+  // Handle edge changes - update local state and trigger save
+  const handleEdgesChange = (edges: typeof flowchart.edges) => {
+    const updatedFlowchart = {
+      ...flowchart,
+      edges,
+      updatedAt: new Date()
+    };
+    if (onSave) {
+      onSave(updatedFlowchart);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full">
       <FlowchartCanvas
         nodes={flowchart.nodes}
         edges={flowchart.edges}
-        onNodesChange={(nodes) => {
-          if (onSave) {
-            onSave({ ...flowchart, nodes, updatedAt: new Date() });
-          }
-        }}
-        onEdgesChange={(edges) => {
-          if (onSave) {
-            onSave({ ...flowchart, edges, updatedAt: new Date() });
-          }
-        }}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
         title={flowchart.title}
-        onSave={onSave ? () => onSave(flowchart) : undefined}
-        onExport={onExport ? () => onExport(flowchart) : undefined}
+        onSave={handleSave}
+        onExport={handleExport}
       />
     </div>
   );
