@@ -109,7 +109,7 @@ export function FlowchartCanvas({
     });
 
     // Add padding (node width/height estimation)
-    const padding = 150;
+    const padding = 200;
     minX -= padding;
     maxX += padding;
     minY -= padding;
@@ -118,10 +118,10 @@ export function FlowchartCanvas({
     const contentWidth = maxX - minX;
     const contentHeight = maxY - minY;
 
-    // Calculate zoom to fit
+    // Calculate zoom to fit - more conservative for readability
     const zoomX = canvasWidth / contentWidth;
     const zoomY = canvasHeight / contentHeight;
-    const optimalZoom = Math.min(zoomX, zoomY, 1.5); // Max zoom 1.5x
+    const optimalZoom = Math.min(zoomX, zoomY, 0.9); // Max zoom 0.9x for better text readability
 
     // Calculate center offset
     const centerX = (minX + maxX) / 2;
@@ -344,14 +344,14 @@ export function FlowchartCanvas({
         <defs>
           <marker
             id={`arrowhead-${edge.id}`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="4"
+            markerWidth="8"
+            markerHeight="8"
+            refX="7"
+            refY="3"
             orient="auto"
           >
             <polygon 
-              points="0 0, 12 4, 0 8" 
+              points="0 0, 8 3, 0 6" 
               fill="#9CA3AF"
               style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.5))' }}
             />
