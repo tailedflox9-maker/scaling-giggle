@@ -62,102 +62,88 @@ export function ChatArea({
   if (!conversation) {
     return (
       <div className="chat-area">
-        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
-          <div className="text-center max-w-3xl mx-auto">
-            {/* Logo with gradient background */}
-            <div className="mb-6 flex justify-center">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center p-4 shadow-2xl animate-fade-in-up">
+        <div className="flex-1 flex flex-col items-center justify-center p-8">
+          <div className="text-center max-w-2xl mx-auto space-y-8">
+            
+            {/* Logo */}
+            <div className="flex justify-center">
+              <div className="w-24 h-24 bg-[var(--color-card)] rounded-2xl flex items-center justify-center p-5 border border-[var(--color-border)]">
                 <img
                   src="/white-logo.png"
-                  alt="AI Tutor Logo"
-                  className="w-full h-full object-contain"
+                  alt="AI Tutor"
+                  className="w-full h-full object-contain opacity-90"
                 />
               </div>
             </div>
 
             {/* Heading */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--color-text-primary)] mb-3 animate-fade-in-up">
-              Welcome to AI Tutor
-            </h1>
-            
-            {/* Subheading */}
-            <p className="text-sm sm:text-base text-[var(--color-text-secondary)] mb-8 max-w-xl mx-auto leading-relaxed animate-fade-in-up">
-              Your intelligent learning companion powered by advanced AI. Get instant help, master concepts, and accelerate your learning journey.
-            </p>
-
-            {/* Feature highlights - 2x2 grid on mobile, 4 columns on desktop */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 animate-fade-in-up">
-              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-4 hover:border-blue-500/50 transition-all duration-200 hover:shadow-lg">
-                <div className="text-2xl sm:text-3xl mb-2">🎓</div>
-                <div className="font-semibold text-[var(--color-text-primary)] text-sm mb-1">Expert Tutor</div>
-                <div className="text-[var(--color-text-secondary)] text-xs leading-relaxed">Personalized explanations</div>
-              </div>
-              
-              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-4 hover:border-purple-500/50 transition-all duration-200 hover:shadow-lg">
-                <div className="text-2xl sm:text-3xl mb-2">💡</div>
-                <div className="font-semibold text-[var(--color-text-primary)] text-sm mb-1">Smart Quizzes</div>
-                <div className="text-[var(--color-text-secondary)] text-xs leading-relaxed">Auto-generated tests</div>
-              </div>
-              
-              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-4 hover:border-green-500/50 transition-all duration-200 hover:shadow-lg">
-                <div className="text-2xl sm:text-3xl mb-2">📊</div>
-                <div className="font-semibold text-[var(--color-text-primary)] text-sm mb-1">Flowcharts</div>
-                <div className="text-[var(--color-text-secondary)] text-xs leading-relaxed">Visual concept maps</div>
-              </div>
-
-              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-4 hover:border-yellow-500/50 transition-all duration-200 hover:shadow-lg">
-                <div className="text-2xl sm:text-3xl mb-2">📝</div>
-                <div className="font-semibold text-[var(--color-text-primary)] text-sm mb-1">Smart Notes</div>
-                <div className="text-[var(--color-text-secondary)] text-xs leading-relaxed">Save key insights</div>
-              </div>
-            </div>
-
-            {/* Good to know section */}
-            <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-5 sm:p-6 mb-6 text-left animate-fade-in-up">
-              <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-                <span className="text-xl">✨</span>
-                Good to Know
-              </h3>
-              <div className="space-y-3 text-xs sm:text-sm text-[var(--color-text-secondary)]">
-                <div className="flex items-start gap-3">
-                  <span className="text-blue-400 font-bold flex-shrink-0">→</span>
-                  <p className="leading-relaxed">
-                    <strong className="text-[var(--color-text-primary)]">4 Tutor Modes:</strong> Switch between Standard, Exam Coach, Friendly Mentor, or Creative Guide in settings
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-purple-400 font-bold flex-shrink-0">→</span>
-                  <p className="leading-relaxed">
-                    <strong className="text-[var(--color-text-primary)]">Multiple AI Models:</strong> Choose from Gemma, ZhipuAI, Mistral, or Codestral for different tasks
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-green-400 font-bold flex-shrink-0">→</span>
-                  <p className="leading-relaxed">
-                    <strong className="text-[var(--color-text-primary)]">Offline Support:</strong> Install as PWA to access your saved conversations anytime
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-yellow-400 font-bold flex-shrink-0">→</span>
-                  <p className="leading-relaxed">
-                    <strong className="text-[var(--color-text-primary)]">Privacy First:</strong> All your data stays on your device—no cloud storage
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Getting started tip */}
-            <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/30 rounded-lg p-4 animate-fade-in-up">
-              <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                💡 <strong className="text-[var(--color-text-primary)]">Pro Tip:</strong> Click <strong>"New chat"</strong> in the sidebar or simply start typing below to begin your learning session!
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold text-[var(--color-text-primary)]">
+                Welcome to AI Tutor
+              </h1>
+              <p className="text-sm text-[var(--color-text-secondary)] max-w-md mx-auto">
+                Your intelligent learning companion powered by advanced AI
               </p>
             </div>
 
+            {/* Features Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4">
+              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg p-4 text-center hover:border-[var(--color-text-secondary)] transition-colors">
+                <div className="text-2xl mb-2">🎓</div>
+                <div className="text-xs font-medium text-[var(--color-text-primary)]">Expert Tutor</div>
+              </div>
+              
+              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg p-4 text-center hover:border-[var(--color-text-secondary)] transition-colors">
+                <div className="text-2xl mb-2">💡</div>
+                <div className="text-xs font-medium text-[var(--color-text-primary)]">Smart Quizzes</div>
+              </div>
+              
+              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg p-4 text-center hover:border-[var(--color-text-secondary)] transition-colors">
+                <div className="text-2xl mb-2">📊</div>
+                <div className="text-xs font-medium text-[var(--color-text-primary)]">Flowcharts</div>
+              </div>
+
+              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg p-4 text-center hover:border-[var(--color-text-secondary)] transition-colors">
+                <div className="text-2xl mb-2">📝</div>
+                <div className="text-xs font-medium text-[var(--color-text-primary)]">Smart Notes</div>
+              </div>
+            </div>
+
+            {/* Good to Know - Minimalistic */}
+            <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg p-5 text-left">
+              <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">
+                Good to Know
+              </h3>
+              <div className="space-y-2 text-xs text-[var(--color-text-secondary)]">
+                <div className="flex items-start gap-2">
+                  <span className="text-[var(--color-text-primary)] mt-0.5">•</span>
+                  <p><strong className="text-[var(--color-text-primary)]">4 Tutor Modes:</strong> Standard, Exam Coach, Mentor, Creative</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[var(--color-text-primary)] mt-0.5">•</span>
+                  <p><strong className="text-[var(--color-text-primary)]">Multiple AI Models:</strong> Gemma, ZhipuAI, Mistral, Codestral</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[var(--color-text-primary)] mt-0.5">•</span>
+                  <p><strong className="text-[var(--color-text-primary)]">Offline Support:</strong> Install as PWA for offline access</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[var(--color-text-primary)] mt-0.5">•</span>
+                  <p><strong className="text-[var(--color-text-primary)]">Privacy First:</strong> All data stays on your device</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Start Tip */}
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              Click <strong className="text-[var(--color-text-primary)]">"New chat"</strong> in the sidebar to begin
+            </p>
+
+            {/* API Key Warning */}
             {!hasApiKey && (
-              <div className="mt-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg animate-fade-in-up">
-                <p className="text-sm text-red-400 flex items-center justify-center gap-2">
-                  <span className="text-lg">⚠️</span>
-                  Please configure your API key in settings to get started
+              <div className="p-3 bg-[var(--color-card)] border border-red-500/30 rounded-lg">
+                <p className="text-xs text-red-400">
+                  ⚠️ Configure your API key in settings first
                 </p>
               </div>
             )}
