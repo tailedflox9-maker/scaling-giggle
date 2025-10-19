@@ -60,8 +60,8 @@ export function NoteView({ note }: NoteViewProps) {
   if (!note) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="text-center max-w-md">
-          <div className="mb-6 flex justify-center">
+        <div className="text-center max-w-lg space-y-6">
+          <div className="flex justify-center">
             <div className="w-20 h-20 bg-[var(--color-card)] rounded-2xl flex items-center justify-center p-4 border border-[var(--color-border)]">
               <img
                 src="/white-logo.png"
@@ -70,12 +70,37 @@ export function NoteView({ note }: NoteViewProps) {
               />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">
-            Select a note to view
-          </h2>
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            Choose a note from the sidebar to get started
-          </p>
+          
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+              Select a note to view
+            </h2>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Choose a note from the sidebar to get started
+            </p>
+          </div>
+
+          {/* Features */}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg p-4">
+              <div className="text-2xl mb-2">📝</div>
+              <div className="text-xs font-medium text-[var(--color-text-primary)] mb-1">Save Messages</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Bookmark important answers</div>
+            </div>
+            
+            <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg p-4">
+              <div className="text-2xl mb-2">🔍</div>
+              <div className="text-xs font-medium text-[var(--color-text-primary)] mb-1">Quick Search</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">Find notes instantly</div>
+            </div>
+          </div>
+
+          {/* Tip */}
+          <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg p-4 text-left">
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              <strong className="text-[var(--color-text-primary)]">💡 How to save:</strong> Hover over any AI response and click the bookmark icon to save it as a note
+            </p>
+          </div>
         </div>
       </div>
     );
