@@ -59,14 +59,18 @@ export function NoteView({ note }: NoteViewProps) {
 
   if (!note) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="text-center max-w-md w-full px-4">
-          <img
-            src="/white-logo.png"
-            alt="AI Tutor Logo"
-            className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 opacity-50"
-          />
-          <h2 className="text-xl sm:text-2xl font-bold text-[var(--color-text-primary)] mb-2">
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <div className="mb-6 flex justify-center">
+            <div className="w-20 h-20 bg-[var(--color-card)] rounded-2xl flex items-center justify-center p-4 border border-[var(--color-border)]">
+              <img
+                src="/white-logo.png"
+                alt="AI Tutor"
+                className="w-full h-full object-contain opacity-50"
+              />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">
             Select a note to view
           </h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
